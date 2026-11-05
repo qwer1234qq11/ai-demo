@@ -3,15 +3,354 @@ import View=Laya.View;
 import Dialog=Laya.Dialog;
 import Scene=Laya.Scene;
 var REG: Function = Laya.ClassUtils.regClass;
-export module ui.test {
-    export class TestSceneUI extends Scene {
+export module ui.ani {
+    export class saceToNormalUI extends Laya.EffectAnimation {
+		public ani1:Laya.FrameAnimation;
+        public static  uiView:any ={"type":"View","props":{},"compId":2,"child":[{"type":"Sprite","props":{"y":0,"x":0,"texture":"comp/x.png"},"compId":3}],"animations":[{"nodes":[{"target":3,"keyframes":{"scaleY":[{"value":0.8,"tweenMethod":"linearNone","tween":true,"target":3,"key":"scaleY","index":0},{"value":1,"tweenMethod":"linearNone","tween":true,"target":3,"key":"scaleY","index":5}],"scaleX":[{"value":0.8,"tweenMethod":"linearNone","tween":true,"target":3,"key":"scaleX","index":0},{"value":1,"tweenMethod":"linearNone","tween":true,"target":3,"key":"scaleX","index":5}]}}],"name":"ani1","id":1,"frameRate":24,"action":0}],"loadList":["comp/x.png"],"loadList3D":[]};
+        constructor(){ super();this.effectData =saceToNormalUI.uiView;}
+    }
+    REG("ui.ani.saceToNormalUI",saceToNormalUI);
+    export class scaleUI extends Laya.EffectAnimation {
+		public ani1:Laya.FrameAnimation;
+        public static  uiView:any ={"type":"View","props":{},"compId":2,"child":[{"type":"Button","props":{"y":0,"x":0,"skin":"comp/button.png","label":"label","labelSize":28,"labelFont":"SimHei","labelColors":"#fff,#fff,#e7ce4e","sizeGrid":"14,16,15,19","width":160,"labelPadding":"0,0,1,0"},"compId":3}],"animations":[{"nodes":[{"target":3,"keyframes":{"scaleY":[{"value":1,"tweenMethod":"linearNone","tween":true,"target":3,"key":"scaleY","index":0},{"value":1.2,"tweenMethod":"linearNone","tween":true,"target":3,"key":"scaleY","index":12},{"value":1,"tweenMethod":"linearNone","tween":true,"target":3,"key":"scaleY","index":24}],"scaleX":[{"value":1,"tweenMethod":"linearNone","tween":true,"target":3,"key":"scaleX","index":0},{"value":1.2,"tweenMethod":"linearNone","tween":true,"target":3,"key":"scaleX","index":12},{"value":1,"tweenMethod":"linearNone","tween":true,"target":3,"key":"scaleX","index":24}]}}],"name":"ani1","id":1,"frameRate":60,"action":0}],"loadList":["comp/button.png"],"loadList3D":[]};
+        constructor(){ super();this.effectData =scaleUI.uiView;}
+    }
+    REG("ui.ani.scaleUI",scaleUI);
+    export class scaleToBigUI extends Laya.EffectAnimation {
+		public ani1:Laya.FrameAnimation;
+        public static  uiView:any ={"type":"View","props":{},"compId":2,"child":[{"type":"Image","props":{"y":0,"x":0,"skin":"comp/img_blank.png"},"compId":3}],"animations":[{"nodes":[{"target":3,"keyframes":{"scaleY":[{"value":1,"tweenMethod":"linearNone","tween":true,"target":3,"key":"scaleY","index":0},{"value":1.2,"tweenMethod":"linearNone","tween":true,"target":3,"key":"scaleY","index":6}],"scaleX":[{"value":1,"tweenMethod":"linearNone","tween":true,"target":3,"key":"scaleX","index":0},{"value":1.2,"tweenMethod":"linearNone","tween":true,"target":3,"key":"scaleX","index":6}]}}],"name":"ani1","id":1,"frameRate":24,"action":0}],"loadList":["comp/img_blank.png"],"loadList3D":[]};
+        constructor(){ super();this.effectData =scaleToBigUI.uiView;}
+    }
+    REG("ui.ani.scaleToBigUI",scaleToBigUI);
+    export class scaleToSmallUI extends Laya.EffectAnimation {
+		public ani1:Laya.FrameAnimation;
+        public static  uiView:any ={"type":"View","props":{},"compId":2,"child":[{"type":"Image","props":{"y":0,"x":0,"skin":"comp/img_hd.png"},"compId":4}],"animations":[{"nodes":[{"target":4,"keyframes":{"scaleY":[{"value":1,"tweenMethod":"linearNone","tween":true,"target":4,"key":"scaleY","index":0},{"value":0.8,"tweenMethod":"linearNone","tween":true,"target":4,"key":"scaleY","index":6}],"scaleX":[{"value":1,"tweenMethod":"linearNone","tween":true,"target":4,"key":"scaleX","index":0},{"value":0.8,"tweenMethod":"linearNone","tween":true,"target":4,"key":"scaleX","index":6}]}}],"name":"ani1","id":1,"frameRate":24,"action":0}],"loadList":["comp/img_hd.png"],"loadList3D":[]};
+        constructor(){ super();this.effectData =scaleToSmallUI.uiView;}
+    }
+    REG("ui.ani.scaleToSmallUI",scaleToSmallUI);
+}
+export module ui {
+    export class LoadingUI extends View {
+		public progress:Laya.ProgressBar;
+        constructor(){ super()}
+        createChildren():void {
+            super.createChildren();
+            this.loadScene("Loading");
+        }
+    }
+    REG("ui.LoadingUI",LoadingUI);
+}
+export module ui.physicsDemo {
+    export class PhysicsGameMainUI extends View {
 		public scoreLbl:Laya.Label;
 		public tipLbll:Laya.Label;
         constructor(){ super()}
         createChildren():void {
             super.createChildren();
-            this.loadScene("test/TestScene");
+            this.loadScene("physicsDemo/PhysicsGameMain");
         }
     }
-    REG("ui.test.TestSceneUI",TestSceneUI);
+    REG("ui.physicsDemo.PhysicsGameMainUI",PhysicsGameMainUI);
+}
+export module ui.uiDemo.animation {
+    export class AniEffectUI extends View {
+        constructor(){ super()}
+        createChildren():void {
+            super.createChildren();
+            this.loadScene("uiDemo/animation/AniEffect");
+        }
+    }
+    REG("ui.uiDemo.animation.AniEffectUI",AniEffectUI);
+    export class AtlasAniUI extends View {
+		public playAni:Laya.Button;
+		public stopAni:Laya.Button;
+		public selectAni:Laya.ComboBox;
+		public aniSource:Laya.Animation;
+        constructor(){ super()}
+        createChildren():void {
+            super.createChildren();
+            this.loadScene("uiDemo/animation/AtlasAni");
+        }
+    }
+    REG("ui.uiDemo.animation.AtlasAniUI",AtlasAniUI);
+    export class FrameAniUI extends View {
+		public playAni:Laya.Button;
+		public stopAni:Laya.Button;
+		public selectAni:Laya.ComboBox;
+		public aniSource:Laya.Animation;
+        constructor(){ super()}
+        createChildren():void {
+            super.createChildren();
+            this.loadScene("uiDemo/animation/FrameAni");
+        }
+    }
+    REG("ui.uiDemo.animation.FrameAniUI",FrameAniUI);
+    export class TimelineAniUI extends View {
+        constructor(){ super()}
+        createChildren():void {
+            super.createChildren();
+            this.loadScene("uiDemo/animation/TimelineAni");
+        }
+    }
+    REG("ui.uiDemo.animation.TimelineAniUI",TimelineAniUI);
+    export class TweenAniUI extends View {
+		public ani1:Laya.FrameAnimation;
+        constructor(){ super()}
+        createChildren():void {
+            super.createChildren();
+            this.loadScene("uiDemo/animation/TweenAni");
+        }
+    }
+    REG("ui.uiDemo.animation.TweenAniUI",TweenAniUI);
+}
+export module ui.uiDemo {
+    export class DialogUI extends Dialog {
+		public dialogTitle:Laya.Label;
+		public dialogText:Laya.TextArea;
+		public closeBtn:Laya.Sprite;
+        constructor(){ super()}
+        createChildren():void {
+            super.createChildren();
+            this.loadScene("uiDemo/Dialog");
+        }
+    }
+    REG("ui.uiDemo.DialogUI",DialogUI);
+    export class MsgUI extends View {
+		public msgLab:Laya.Label;
+        constructor(){ super()}
+        createChildren():void {
+            super.createChildren();
+            this.loadScene("uiDemo/Msg");
+        }
+    }
+    REG("ui.uiDemo.MsgUI",MsgUI);
+    export class UiMainUI extends View {
+		public topTab:Laya.Tab;
+		public tabPage:Laya.ViewStack;
+		public item0Tab:Laya.Tab;
+		public item0Page:Laya.ViewStack;
+		public item1Tab:Laya.Tab;
+		public item1Page:Laya.ViewStack;
+		public item2Tab:Laya.Tab;
+		public item2Page:Laya.ViewStack;
+		public item3Tab:Laya.Tab;
+		public item3Page:Laya.ViewStack;
+		public item4Tab:Laya.Tab;
+		public item4Page:Laya.ViewStack;
+        constructor(){ super()}
+        createChildren():void {
+            super.createChildren();
+            this.loadScene("uiDemo/UiMain");
+        }
+    }
+    REG("ui.uiDemo.UiMainUI",UiMainUI);
+}
+export module ui.uiDemo.interactive {
+    export class JoystickUI extends View {
+        constructor(){ super()}
+        createChildren():void {
+            super.createChildren();
+            this.loadScene("uiDemo/interactive/Joystick");
+        }
+    }
+    REG("ui.uiDemo.interactive.JoystickUI",JoystickUI);
+    export class ShapeDetectionUI extends View {
+		public c1:Laya.Sprite;
+		public c11:Laya.Sprite;
+		public p1:Laya.Sprite;
+		public p11:Laya.Sprite;
+		public p2:Laya.Sprite;
+		public p22:Laya.Sprite;
+		public detectionType:Laya.RadioGroup;
+        constructor(){ super()}
+        createChildren():void {
+            super.createChildren();
+            this.loadScene("uiDemo/interactive/ShapeDetection");
+        }
+    }
+    REG("ui.uiDemo.interactive.ShapeDetectionUI",ShapeDetectionUI);
+}
+export module ui.uiDemo.list {
+    export class BagListUI extends View {
+		public bagList:Laya.List;
+		public tips:Laya.Image;
+		public itemImg:Laya.Image;
+		public itemNumber:Laya.Label;
+		public itemReadme:Laya.TextArea;
+        constructor(){ super()}
+        createChildren():void {
+            super.createChildren();
+            this.loadScene("uiDemo/list/BagList");
+        }
+    }
+    REG("ui.uiDemo.list.BagListUI",BagListUI);
+    export class ComboBoxUI extends View {
+		public combo1:Laya.ComboBox;
+		public combo2:Laya.ComboBox;
+		public selectedText:Laya.Text;
+        constructor(){ super()}
+        createChildren():void {
+            super.createChildren();
+            this.loadScene("uiDemo/list/ComboBox");
+        }
+    }
+    REG("ui.uiDemo.list.ComboBoxUI",ComboBoxUI);
+    export class LoopListUI extends View {
+		public hList:Laya.List;
+        constructor(){ super()}
+        createChildren():void {
+            super.createChildren();
+            this.loadScene("uiDemo/list/LoopList");
+        }
+    }
+    REG("ui.uiDemo.list.LoopListUI",LoopListUI);
+    export class MailListUI extends View {
+		public selectDel:Laya.Button;
+		public selectFlag:Laya.Button;
+		public addMail:Laya.Button;
+		public mailList:Laya.List;
+        constructor(){ super()}
+        createChildren():void {
+            super.createChildren();
+            this.loadScene("uiDemo/list/MailList");
+        }
+    }
+    REG("ui.uiDemo.list.MailListUI",MailListUI);
+    export class RefreshUI extends View {
+		public refreshLoading:Laya.Box;
+		public refreshList:Laya.List;
+		public toLine:Laya.Button;
+		public lineNumber:Laya.TextInput;
+		public toTop:Laya.Button;
+		public toBottom:Laya.Button;
+        constructor(){ super()}
+        createChildren():void {
+            super.createChildren();
+            this.loadScene("uiDemo/list/Refresh");
+        }
+    }
+    REG("ui.uiDemo.list.RefreshUI",RefreshUI);
+    export class TreeListUI extends View {
+		public tree1:Laya.Tree;
+		public tree2:Laya.Tree;
+        constructor(){ super()}
+        createChildren():void {
+            super.createChildren();
+            this.loadScene("uiDemo/list/TreeList");
+        }
+    }
+    REG("ui.uiDemo.list.TreeListUI",TreeListUI);
+}
+export module ui.uiDemo.page {
+    export class IframeElementUI extends View {
+		public videoBtn:Laya.Button;
+		public closeBox:Laya.Box;
+		public iframeBox:Laya.Box;
+        constructor(){ super()}
+        createChildren():void {
+            super.createChildren();
+            this.loadScene("uiDemo/page/IframeElement");
+        }
+    }
+    REG("ui.uiDemo.page.IframeElementUI",IframeElementUI);
+    export class OpenMainSceneUI extends View {
+        constructor(){ super()}
+        createChildren():void {
+            super.createChildren();
+            this.loadScene("uiDemo/page/OpenMainScene");
+        }
+    }
+    REG("ui.uiDemo.page.OpenMainSceneUI",OpenMainSceneUI);
+    export class OpenSceneUI extends View {
+        constructor(){ super()}
+        createChildren():void {
+            super.createChildren();
+            this.loadScene("uiDemo/page/OpenScene");
+        }
+    }
+    REG("ui.uiDemo.page.OpenSceneUI",OpenSceneUI);
+    export class UsePanelUI extends View {
+		public _panel:Laya.Panel;
+		public topLab:Laya.Label;
+        constructor(){ super()}
+        createChildren():void {
+            super.createChildren();
+            this.loadScene("uiDemo/page/UsePanel");
+        }
+    }
+    REG("ui.uiDemo.page.UsePanelUI",UsePanelUI);
+}
+export module ui.uiDemo.useUI {
+    export class ChangeTextureUI extends View {
+		public spImg:Laya.Sprite;
+		public Img:Laya.Image;
+		public _textureImg:Laya.Sprite;
+        constructor(){ super()}
+        createChildren():void {
+            super.createChildren();
+            this.loadScene("uiDemo/useUI/ChangeTexture");
+        }
+    }
+    REG("ui.uiDemo.useUI.ChangeTextureUI",ChangeTextureUI);
+    export class MaskUI extends View {
+		public bg2:Laya.Image;
+		public _mask:Laya.Sprite;
+		public bg3Mask:Laya.Sprite;
+		public _hitArea:Laya.Sprite;
+        constructor(){ super()}
+        createChildren():void {
+            super.createChildren();
+            this.loadScene("uiDemo/useUI/Mask");
+        }
+    }
+    REG("ui.uiDemo.useUI.MaskUI",MaskUI);
+    export class MouseThroughUI extends View {
+		public throughTab:Laya.Tab;
+		public leftBg:Laya.Sprite;
+		public btn1:Laya.Button;
+		public close1:Laya.Sprite;
+		public rightBg:Laya.Image;
+		public btn2:Laya.Button;
+		public close2:Laya.Sprite;
+        constructor(){ super()}
+        createChildren():void {
+            super.createChildren();
+            this.loadScene("uiDemo/useUI/MouseThrough");
+        }
+    }
+    REG("ui.uiDemo.useUI.MouseThroughUI",MouseThroughUI);
+    export class PhysicalCollisionUI extends View {
+		public bTop:Laya.Image;
+		public bBottom:Laya.Image;
+		public bLeft:Laya.Image;
+		public bRight:Laya.Image;
+        constructor(){ super()}
+        createChildren():void {
+            super.createChildren();
+            this.loadScene("uiDemo/useUI/PhysicalCollision");
+        }
+    }
+    REG("ui.uiDemo.useUI.PhysicalCollisionUI",PhysicalCollisionUI);
+    export class ProgressUI extends Scene {
+		public loading2:Laya.ProgressBar;
+		public loadText:Laya.Text;
+		public ani1:Laya.Animation;
+		public ani2:Laya.Animation;
+        constructor(){ super()}
+        createChildren():void {
+            super.createChildren();
+            this.loadScene("uiDemo/useUI/Progress");
+        }
+    }
+    REG("ui.uiDemo.useUI.ProgressUI",ProgressUI);
+    export class TextShowUI extends Scene {
+		public btFont:Laya.Label;
+		public textArea:Laya.TextArea;
+        constructor(){ super()}
+        createChildren():void {
+            super.createChildren();
+            this.loadScene("uiDemo/useUI/TextShow");
+        }
+    }
+    REG("ui.uiDemo.useUI.TextShowUI",TextShowUI);
 }

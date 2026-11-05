@@ -221,7 +221,7 @@ window.ttMiniGame = function (exports, Laya) {
             }
             MiniFileMgr.sortOn(tempFileListArr, "times", MiniFileMgr.NUMERIC);
             var clearSize = 0;
-            for (var i = 1, sz = tempFileListArr.length; i < sz; i++) {
+            for (var i = 0, sz = tempFileListArr.length; i < sz; i++) {
                 var fileObj = tempFileListArr[i];
                 if (clearSize >= memSize)
                     break;
@@ -264,7 +264,7 @@ window.ttMiniGame = function (exports, Laya) {
                 if (key != "fileUsedSize")
                     tempFileListArr.push(MiniFileMgr.filesListObj[key]);
             }
-            for (var i = 1, sz = tempFileListArr.length; i < sz; i++) {
+            for (var i = 0, sz = tempFileListArr.length; i < sz; i++) {
                 var fileObj = tempFileListArr[i];
                 MiniFileMgr.deleteFile("", fileObj.readyUrl);
             }

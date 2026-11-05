@@ -221,7 +221,7 @@ window.miMiniGame = function (exports, Laya) {
             }
             MiniFileMgr.sortOn(tempFileListArr, "times", MiniFileMgr.NUMERIC);
             var clearSize = 0;
-            for (var i = 1, sz = tempFileListArr.length; i < sz; i++) {
+            for (var i = 0, sz = tempFileListArr.length; i < sz; i++) {
                 var fileObj = tempFileListArr[i];
                 if (clearSize >= memSize)
                     break;
@@ -264,7 +264,7 @@ window.miMiniGame = function (exports, Laya) {
                 if (key != "fileUsedSize")
                     tempFileListArr.push(MiniFileMgr.filesListObj[key]);
             }
-            for (var i = 1, sz = tempFileListArr.length; i < sz; i++) {
+            for (var i = 0, sz = tempFileListArr.length; i < sz; i++) {
                 var fileObj = tempFileListArr[i];
                 MiniFileMgr.deleteFile("", fileObj.readyUrl);
             }
@@ -1117,8 +1117,14 @@ window.miMiniGame = function (exports, Laya) {
                 MiniFileMgr.fakeObj = {};
                 MiniFileMgr.filesListObj = {};
             }
-            let files = MiniFileMgr.fs.readdirSync(MiniFileMgr.fileNativeDir);
-            if (!files.length)
+            let files;
+            try {
+                files = MiniFileMgr.fs.readdirSync(MiniFileMgr.fileNativeDir);
+            }
+            catch (error) {
+                console.log("readdirsync failed. path: " + MiniFileMgr.fileNativeDir + " error: " + error);
+            }
+            if ((!files) || (!files.length))
                 return;
             var tempMd5ListObj = {};
             var fileObj;

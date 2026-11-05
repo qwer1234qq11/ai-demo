@@ -1,4 +1,4 @@
-// v1.8.0
+// v1.8.2
 const ideModuleDir = global.ideModuleDir;
 const workSpaceDir = global.workSpaceDir;
 
@@ -11,23 +11,23 @@ const revCollector = require(ideModuleDir + 'gulp-rev-collector');
 let copyLibsTask = ["copyPlatformLibsJsFile"];
 let versiontask = ["version2"];
 
-let 
-    config,
-    releaseDir;
+let
+	config,
+	releaseDir;
 let versionCon; // 版本管理version.json
 let commandSuffix,
 	layarepublicPath;
 
-gulp.task("preCreate_Alipay", copyLibsTask, function() {
+gulp.task("preCreate_Alipay", copyLibsTask, function () {
 	releaseDir = global.releaseDir;
 	config = global.config;
 	commandSuffix = global.commandSuffix;
 	layarepublicPath = global.layarepublicPath;
 });
 
-gulp.task("copyPlatformFile_Alipay", ["preCreate_Alipay"], function() {
+gulp.task("copyPlatformFile_Alipay", ["preCreate_Alipay"], function () {
 	let adapterPath = path.join(layarepublicPath, "LayaAirProjectPack", "lib", "data", "Alipayfiles");
-	let hasPublishPlatform = 
+	let hasPublishPlatform =
 		fs.existsSync(path.join(releaseDir, "game.js")) &&
 		fs.existsSync(path.join(releaseDir, "game.json")) &&
 		fs.existsSync(path.join(releaseDir, "project.config.json"));
@@ -41,12 +41,19 @@ gulp.task("copyPlatformFile_Alipay", ["preCreate_Alipay"], function() {
 	return stream.pipe(gulp.dest(releaseDir));
 });
 
-gulp.task("modifyFile_Alipay", versiontask, function() {
+gulp.task("modifyFile_Alipay", versiontask, function () {
 	// 修改game.json文件
 	let gameJsonPath = path.join(releaseDir, "game.json");
 	let content = fs.readFileSync(gameJsonPath, "utf8");
 	let conJson = JSON.parse(content);
 	conJson.screenOrientation = config.AlipayInfo.orientation;
+
+	if (config.AlipayInfo.subpack) {
+		conJson.subpackages = config.alipaySubpack;
+	} else {
+		delete conJson.subpackages;
+	}
+
 	content = JSON.stringify(conJson, null, 4);
 	fs.writeFileSync(gameJsonPath, content, "utf8");
 
@@ -66,17 +73,69 @@ require("./libs/laya.Alipaymini.js");\nrequire("./index.js");`;
 		versionCon = JSON.parse(versionCon);
 	}
 	// 修改index.js
-	let indexJsStr = (versionCon && versionCon["index.js"]) ? versionCon["index.js"] :  "index.js";
+	let indexJsStr = (versionCon && versionCon["index.js"]) ? versionCon["index.js"] : "index.js";
 	let indexFilePath = path.join(releaseDir, indexJsStr);
 	if (!fs.existsSync(indexFilePath)) {
 		return;
 	}
 	let indexFileContent = fs.readFileSync(indexFilePath, "utf8");
 	indexFileContent = indexFileContent.replace(/loadLib(\(['"])/gm, "require$1./");
+	if (config.useWASM) {
+		let wasmList = [];
+		let jsList = [];
+		let insertIndex = -1;
+		function checkWasm(cwasmStr) {
+			//找到indexFileContent中是否有.wasm.的文件
+			if (indexFileContent.includes(cwasmStr)) {
+				//找到所有的.wasm.的文件
+				let findIndex = 0;
+				while (true) {
+					findIndex = indexFileContent.indexOf(cwasmStr, findIndex);
+					if (findIndex !== -1) {
+						//提取这一行的数据，要从这一行的开头获取，到下一行的开头，并不是从findIndex位置开始，并且把这一行数据从原始数据充删除
+						const endIndex = indexFileContent.indexOf("\n", findIndex);
+						const startIndex = indexFileContent.lastIndexOf("\n", findIndex);
+						if (startIndex < insertIndex || -1 === insertIndex) {
+							insertIndex = startIndex;
+						}
+						const wasmStr = indexFileContent.substring(startIndex + 1, endIndex);
+						const findIndex2 = wasmStr.indexOf(cwasmStr);
+						const findEndIndex = wasmStr.indexOf(".", findIndex2 + 1);
+						const replaceStr = wasmStr.substring(findIndex2, findEndIndex);
+
+						const jsStr = wasmStr.replace(replaceStr, "");
+						const findJsIndex = indexFileContent.indexOf(jsStr);
+						if (0 <= findJsIndex) {
+							if (findJsIndex < insertIndex) {
+								insertIndex = findJsIndex;
+							}
+							jsList.push(jsStr);
+							indexFileContent = indexFileContent.replace(jsStr, "");
+						}
+						wasmList.push(wasmStr);
+						indexFileContent = indexFileContent.replace(wasmStr, "");
+						findIndex = 0;
+					} else {
+						break;
+					}
+				}
+			}
+		}
+		checkWasm(".wasm");
+
+		if (wasmList.length > 0) {
+			const insertStr = "\nif(!window.MYWebAssembly){\n" +
+				jsList.join("\n") +
+				"\n}else{\n" +
+				wasmList.join("\n") +
+				"\n}";
+			indexFileContent = indexFileContent.substring(0, insertIndex) + insertStr + indexFileContent.substring(insertIndex);
+		}
+	}
 	fs.writeFileSync(indexFilePath, indexFileContent, "utf8");
 })
 
-gulp.task("modifyMinJs_Alipay", ["modifyFile_Alipay"], function() {
+gulp.task("modifyMinJs_Alipay", ["modifyFile_Alipay"], function () {
 	// 如果保留了平台文件，如果同时取消使用min类库，就会出现文件引用不正确的问题
 	if (config.keepPlatformFile) {
 		let fileJsPath = path.join(releaseDir, "game.js");
@@ -112,6 +171,6 @@ gulp.task("version_Alipay", ["modifyMinJs_Alipay"], function () {
 	}
 });
 
-gulp.task("buildAlipayProj", ["version_Alipay"], function() {
+gulp.task("buildAlipayProj", ["version_Alipay"], function () {
 	console.log("all tasks completed");
 });

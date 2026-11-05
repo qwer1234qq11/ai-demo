@@ -2958,6 +2958,7 @@
                         }
                     }
                     this._graphicsCache[i].length = 0;
+                    this._graphicsCache[i] = [];
                 }
             }
         }
@@ -3066,7 +3067,7 @@
         }
         destroy(destroyChild = true) {
             super.destroy(destroyChild);
-            this._templet._removeReference(1);
+            this._templet && this._templet._removeReference(1);
             this._templet = null;
             if (this._player)
                 this._player.offAll();

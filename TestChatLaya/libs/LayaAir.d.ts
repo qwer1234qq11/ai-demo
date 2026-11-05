@@ -128,6 +128,11 @@
 		octreeLooseness:number;
 
 		/**
+		 * enableDistanceCull 距离裁剪
+		 */
+		distanceVolumCull:boolean;
+
+		/**
 		 * 是否开启视锥裁剪调试。
 		 * 如果开启八叉树裁剪,使用红色绘制高层次八叉树节点包围盒,使用蓝色绘制低层次八叉节点包围盒,精灵包围盒和八叉树节点包围盒颜色一致,但Alpha为非透明。如果视锥完全包含八叉树节点,八叉树节点包围盒和精灵包围盒变为蓝色,同样精灵包围盒的Alpha为非透明。
 		 * 如果不开启八叉树裁剪,使用绿色像素线绘制精灵包围盒。
@@ -295,6 +300,7 @@
 		 * @return 返回原生canvas引用，方便对canvas属性进行修改
 		 */
 		static init(width:number,height:number,...plugins:any[]):any;
+		static createRender():any;
 
 		/**
 		 * 表示是否捕获全局错误并弹出提示。默认为false。
@@ -2775,7 +2781,8 @@ enum AnimatorUpdateMode {
 		 * 获得遮罩信息
 		 * @returns 
 		 */
-		getAllTranfromPath():{[key:string]:boolean;};
+		getAllTranfromPath():{
+	[ key:string]:boolean;};
 
 		/**
 		 * 克隆。
@@ -3372,6 +3379,16 @@ enum CameraEventFlags {
 		 * 深度法线贴图
 		 */
 		private _depthNormalsTexture:any;
+
+		/**
+		 * 非透明物体贴图
+		 */
+		private _opaqueTexture:any;
+
+		/**
+		 * 是否开启非透明物体通道
+		 */
+		private _opaquePass:any;
 		private _cameraEventCommandBuffer:any;
 
 		/**
@@ -3464,6 +3481,12 @@ enum CameraEventFlags {
 		set depthTextureMode(value:number);
 
 		/**
+		 * 设置OpaquePass模式
+		 */
+		set opaquePass(value:boolean);
+		get opaquePass():boolean;
+
+		/**
 		 * 深度贴图格式
 		 */
 		get depthTextureFormat():RenderTextureDepthFormat;
@@ -3474,6 +3497,8 @@ enum CameraEventFlags {
 		 */
 		set enableBlitDepth(value:boolean);
 		get canblitDepth():boolean;
+		set depthTexture(value:BaseTexture);
+		set depthNormalTexture(value:RenderTexture);
 
 		/**
 		 * 创建一个 <code>Camera</code> 实例。
@@ -3499,8 +3524,7 @@ enum CameraEventFlags {
 		 * @param context 
 		 */
 		_applyCommandBuffer(event:number,context:RenderContext3D):void;
-		set depthTexture(value:BaseTexture);
-		set depthNormalTexture(value:RenderTexture);
+		_createOpaqueTexture(currentTarget:RenderTexture,renderContext:RenderContext3D):void;
 
 		/**
 		 * @override 
@@ -8575,6 +8599,13 @@ enum ReflectionProbeMode {
 		get id():number;
 
 		/**
+		 * DistanceVolumCull
+		 * 根据距离和包围盒进行裁剪，越大越容易被裁
+		 */
+		set ratioIgnor(value:number);
+		get ratioIgnor():number;
+
+		/**
 		 * 光照贴图的索引。
 		 */
 		get lightmapIndex():number;
@@ -9747,11 +9778,6 @@ enum AmbientMode {
 		 * 当前创建精灵所属遮罩层。
 		 */
 		currentCreationLayer:number;
-
-		/**
-		 * 是否启用灯光。
-		 */
-		enableLight:boolean;
 
 		/**
 		 * 资源的URL地址。
@@ -11532,6 +11558,10 @@ enum IndexFormat {
 		 * 最大顶点。
 		 */
 		max:Vector3;
+
+		/**
+		 */
+		_lastBoundIndex:number;
 
 		/**
 		 * 创建一个 <code>BoundBox</code> 实例。
@@ -15688,6 +15718,7 @@ enum IndexFormat {
 	 * <code>MeshColliderShape</code> 类用于创建网格碰撞器。
 	 */
 	class MeshColliderShape extends ColliderShape  {
+		private _physicMesh:any;
 
 		/**
 		 * 网格。
@@ -15706,6 +15737,8 @@ enum IndexFormat {
 		 */
 
 		constructor();
+		private _createDynamicMeshCollider:any;
+		private _createBvhTriangleCollider:any;
 
 		/**
 		 * @inheritDoc 
@@ -16860,7 +16893,7 @@ enum IndexFormat {
 		/**
 		 * 从对象池获取临时渲染目标。
 		 */
-		static createFromPool(width:number,height:number,format?:number,depthStencilFormat?:number,mulSamples?:number,mipmap?:boolean):RenderTexture;
+		static createFromPool(width:number,height:number,format?:number,depthStencilFormat?:RenderTextureDepthFormat,mulSamples?:number,mipmap?:boolean):RenderTexture;
 
 		/**
 		 * 回收渲染目标到对象池,释放后可通过createFromPool复用。
@@ -17558,7 +17591,8 @@ enum TextureCubeFace {
 		 */
 		get renderState():RenderState;
 
-		constructor(owner:SubShader,vs:string,ps:string,stateMap:{[key:string]:number;});
+		constructor(owner:SubShader,vs:string,ps:string,stateMap:{
+	[ key:string]:number;});
 
 		/**
 		 * @private 
@@ -17723,7 +17757,8 @@ enum TextureCubeFace {
 		 * @param stateMap 
 		 * @param pipelineMode 渲染管线模式。
 		 */
-		addShaderPass(vs:string,ps:string,stateMap?:{[key:string]:number;},pipelineMode?:string):ShaderPass;
+		addShaderPass(vs:string,ps:string,stateMap?:{
+	[ key:string]:number;},pipelineMode?:string):ShaderPass;
 	}
 
 enum ShadowLightType {
@@ -18379,14 +18414,27 @@ enum ShadowLightType {
 		 * default WebLayer option
 		 * XRWebGLLayerInit
 		 */
-		static canvasOptions:{boolean;boolean;boolean;boolean;boolean;boolean;};
+		static canvasOptions:{
+			antialias:boolean;
+
+			depth:boolean;
+
+			stencil:boolean;
+
+			alpha:boolean;
+
+			multiview:boolean;
+
+			framebufferScaleFactor:number;
+
+	};
 
 		/**
 		 * 支持XRSession模式
 		 * @param sessionMode XRSessionMode = "inline" | "immersive-vr" | "immersive-ar";
 		 * @returns 
 		 */
-		static supportXR(sessionMode:string):Promise;
+		static supportXR(sessionMode:string):Promise<boolean>;
 
 		/**
 		 * 申请WewXR交互
@@ -18395,7 +18443,7 @@ enum ShadowLightType {
 		 * @param cameraInfo WebXRCameraInfo webXRCamera设置
 		 * @returns Promise<WebXRSessionManager>
 		 */
-		static enterXRAsync(sessionMode:string,referenceSpaceType:string,cameraInfo:WebXRCameraInfo):Promise;
+		static enterXRAsync(sessionMode:string,referenceSpaceType:string,cameraInfo:WebXRCameraInfo):Promise<WebXRSessionManager>;
 
 		/**
 		 * config WebXRCameraManager
@@ -18724,20 +18772,20 @@ enum ShadowLightType {
 		 * @param gl 
 		 * @returns 
 		 */
-		initializeXRGL(xrSession:any,gl:WebGLRenderingContext):Promise;
+		initializeXRGL(xrSession:any,gl:WebGLRenderingContext):Promise<boolean>;
 
 		/**
 		 * 浏览器是否支持WebXR
 		 * @returns WebXR
 		 */
-		initializeAsync():Promise;
+		initializeAsync():Promise<void>;
 
 		/**
 		 * Sessiopn模式是否支持
 		 * @param sessionMode "inline" | "immersive-vr" | "immersive-ar"
 		 * @returns A Promise that resolves to true if supported and false if not
 		 */
-		isSessionSupportedAsync(sessionMode:string):Promise;
+		isSessionSupportedAsync(sessionMode:string):Promise<boolean>;
 
 		/**
 		 * 初始化Session
@@ -18745,7 +18793,8 @@ enum ShadowLightType {
 		 * @param xrSessionInit any initInfo
 		 * @returns 
 		 */
-		initializeSessionAsync(xrSessionMode?:string,xrSessionInit?:{}):Promise;
+		initializeSessionAsync(xrSessionMode?:string,xrSessionInit?:{
+	}):Promise<any>;
 
 		/**
 		 * Resets the reference space to the one started the session
@@ -18769,7 +18818,7 @@ enum ShadowLightType {
 		 * @param referenceSpaceType space to set
 		 * @returns a promise that will resolve once the reference space has been set
 		 */
-		setReferenceSpaceTypeAsync(referenceSpaceType?:string):Promise;
+		setReferenceSpaceTypeAsync(referenceSpaceType?:string):Promise<any>;
 
 		/**
 		 * Updates the render state of the session
@@ -18793,7 +18842,7 @@ enum ShadowLightType {
 		 * @param rate the new framerate. This value needs to be in the supportedFrameRates array
 		 * @returns a promise that resolves once the framerate has been set
 		 */
-		updateTargetFrameRate(rate:number):Promise;
+		updateTargetFrameRate(rate:number):Promise<void>;
 		destroy():void;
 	}
 
@@ -26036,6 +26085,14 @@ const enum VIDEOTYPE {
 		private onMouseDown:any;
 		private onMouseUp:any;
 		private check:any;
+
+		/**
+		 * 检测鼠标点是否位于目标对象上，
+		 * @param sp 当前检测的节点对象
+		 * @param mouseX x坐标
+		 * @param mouseY y坐标
+		 * @returns 返回布尔值，true点击命中，false未命中
+		 */
 		private hitTest:any;
 		private _checkAllBaseUI:any;
 
@@ -26584,7 +26641,8 @@ const enum glTFTextureWrapMode {
 		/**
 		 * Dictionary object with extension-specific objects.
 		 */
-		extensions?:{[key:string]:any;};
+		extensions?:{
+	[ key:string]:any;};
 
 		/**
 		 * Application-specific data.
@@ -27022,7 +27080,8 @@ const enum glTFTextureWrapMode {
 		/**
 		 * A dictionary object, where each key corresponds to mesh attribute semantic and each value is the index of the accessor containing attribute's data
 		 */
-		attributes:{[key:string]:number;};
+		attributes:{
+	[ name:string]:number;};
 
 		/**
 		 * The index of the accessor that contains the indices
@@ -27043,8 +27102,7 @@ const enum glTFTextureWrapMode {
 		 * An array of Morph Targets, each  Morph Target is a dictionary mapping attributes (only POSITION, NORMAL, and TANGENT supported) to their deviations in the Morph Target
 		 */
 		targets?:{
-        [name: string]: number;
-    }[];
+	[ name:string]:number;}[];
 	}
 
 
@@ -27291,12 +27349,15 @@ const enum glTFTextureWrapMode {
 	 * <code>glTFUtils<code> 用于解析 glTF 2.0 对象
 	 */
 	class glTFUtils  {
-		static Extensions:{[key:string]:Handler;};
+		static Extensions:{
+	[ name:string]:Handler;};
 
 		/**
 		 * 保存 extra 处理函数对象
 		 */
-		static Extras:{[key:string]:{[key:string]:Handler;};};
+		static Extras:{
+	[ name:string]:{
+	[ name:string]:Handler;};};
 
 		/**
 		 * 注册 extra 处理函数
@@ -27649,7 +27710,8 @@ const enum glTFTextureWrapMode {
 	 */
 	class HTMLDocument  {
 		static document:HTMLDocument;
-		all:{[key:string]:HTMLElement;};
+		all:{
+	[ key:string]:HTMLElement;};
 		styleSheets:any;
 		getElementById(id:string):HTMLElement;
 		setElementById(id:string,e:HTMLElement):void;
@@ -30688,7 +30750,8 @@ enum HTMLElementType {
 		/**
 		 * 文件后缀和类型对应表。
 		 */
-		static typeMap:{[key:string]:string;};
+		static typeMap:{
+	[ key:string]:string;};
 
 		/**
 		 * 资源解析函数对应表，用来扩展更多类型的资源加载解析。
@@ -30703,32 +30766,38 @@ enum HTMLElementType {
 		/**
 		 * 资源分组对应表。
 		 */
-		static groupMap:{[key:string]:string[];};
+		static groupMap:{
+	[ key:string]:string[];};
 
 		/**
 		 * 已加载的资源池。
 		 */
-		static loadedMap:{[key:string]:any;};
+		static loadedMap:{
+	[ key:string]:any;};
 
 		/**
 		 * 已加载的图集资源池。
 		 */
-		static atlasMap:{[key:string]:any[];};
+		static atlasMap:{
+	[ key:string]:any[];};
 
 		/**
 		 * 已加载的纹理资源池。
 		 */
-		static textureMap:{[key:string]:Texture;};
+		static textureMap:{
+	[ key:string]:Texture;};
 
 		/**
 		 * @private 已加载的数据文件。
 		 */
-		static preLoadedMap:{[key:string]:ArrayBuffer;};
+		static preLoadedMap:{
+	[ key:string]:ArrayBuffer;};
 
 		/**
 		 * @private 引用image对象，防止垃圾回收
 		 */
-		protected static _imgCache:{[key:string]:HTMLImageElement;};
+		protected static _imgCache:{
+	[ key:string]:HTMLImageElement;};
 
 		/**
 		 * @private 
@@ -37194,12 +37263,22 @@ enum SpineFormat {
 		/**
 		 * @private 
 		 */
+		protected _itemPadding:any[];
+
+		/**
+		 * @private 
+		 */
 		protected _itemSize:number;
 
 		/**
 		 * @private 
 		 */
 		protected _labels:any[];
+
+		/**
+		 * 下拉提示文本
+		 */
+		private _defaultLabel:any;
 
 		/**
 		 * @private 
@@ -37212,7 +37291,7 @@ enum SpineFormat {
 		protected _selectHandler:Handler;
 
 		/**
-		 * @private 
+		 * @private 下拉框列表单元的高度
 		 */
 		protected _itemHeight:number;
 
@@ -37356,6 +37435,12 @@ enum SpineFormat {
 		private changeSelected:any;
 
 		/**
+		 * 默认的下拉提示文本。
+		 */
+		get defaultLabel():string;
+		set defaultLabel(value:string);
+
+		/**
 		 * 改变下拉列表的选择项时执行的处理器(默认返回参数index:int)。
 		 */
 		get selectHandler():Handler;
@@ -37381,10 +37466,23 @@ enum SpineFormat {
 		set itemColors(value:string);
 
 		/**
+		 * 下拉列表文本的边距Padding
+		 * @readme <p><b>格式：</b>上边距,右边距,下边距,左边距</p>
+		 */
+		get itemPadding():string;
+		set itemPadding(value:string);
+
+		/**
 		 * 下拉列表项标签的字体大小。
 		 */
 		get itemSize():number;
 		set itemSize(value:number);
+
+		/**
+		 * 下拉列表项的高度
+		 */
+		get itemHeight():number;
+		set itemHeight(value:number);
 
 		/**
 		 * 表示下拉列表的打开状态。
@@ -38566,6 +38664,11 @@ enum SpineFormat {
 		totalPage:number;
 
 		/**
+		 * 禁用滚动条停止
+		 */
+		disableStopScroll:boolean;
+
+		/**
 		 * @private 
 		 */
 		protected _content:Box;
@@ -39581,6 +39684,21 @@ enum SpineFormat {
 		slider:Slider;
 
 		/**
+		 * 顶部移动限制（达到限制后，会抛出dragTopLimit事件，配合stopMoveLimit()，可让开发者做一些动态数据更新的操作）
+		 */
+		topMoveLimit:number;
+
+		/**
+		 * 底部移动限制（达到限制后，会抛出dragTopLimit事件，配合stopMoveLimit()，可让开发者做一些动态数据更新的操作）
+		 */
+		bottomMoveLimit:number;
+
+		/**
+		 * 调用滚动停止接口stopMoveLimit时，是否禁止内容的拖拽
+		 */
+		disableDrag:boolean;
+
+		/**
 		 * @private 
 		 */
 		protected _showButtons:boolean;
@@ -39621,7 +39739,7 @@ enum SpineFormat {
 		protected _checkElastic:boolean;
 
 		/**
-		 * @private 
+		 * @private 是否为橡皮筋弹性效果
 		 */
 		protected _isElastic:boolean;
 
@@ -39854,6 +39972,11 @@ enum SpineFormat {
 		private cancelDragOp:any;
 		triggerDownDragLimit:Function;
 		triggerUpDragLimit:Function;
+
+		/**
+		 * 暂停滚动的重载方法-add:xiaosong
+		 */
+		stopMoveLimit:Function;
 		private checkTriggers:any;
 		get lastOffset():number;
 		startTweenMoveForce(lastOffset:number):void;
@@ -39888,6 +40011,11 @@ enum SpineFormat {
 		 */
 		get tick():number;
 		set tick(value:number);
+
+		/**
+		 * 恢复到正常的弹性缓动效果
+		 */
+		backToNormal():void;
 	}
 
 	/**
@@ -40409,6 +40537,11 @@ enum SpineFormat {
 		 * @override 
 		 */
 		protected createChildren():void;
+
+		/**
+		 * @private 
+		 */
+		private _onChange:any;
 
 		/**
 		 * @private 
@@ -42071,6 +42204,11 @@ enum SpineFormat {
 		static onSafari:boolean;
 
 		/**
+		 * 表示是否在 Chrome 内
+		 */
+		static onChrome:boolean;
+
+		/**
 		 * 表示是否在 IE 浏览器内
 		 */
 		static onIE:boolean;
@@ -42247,24 +42385,24 @@ enum SpineFormat {
 		static now():number;
 
 		/**
-		 * 浏览器窗口可视宽度。
-		 * 通过分析浏览器信息获得。浏览器多个属性值优先级为：window.innerWidth(包含滚动条宽度) > document.body.clientWidth(不包含滚动条宽度)，如果前者为0或为空，则选择后者。
+		 * 获得真实的浏览器窗口可视宽度（设备水平方向的像素），不考虑画布是否旋转与设备像素比。
+		 * @readme 通过分析浏览器信息获得。浏览器多个属性值优先级为：window.innerWidth(包含滚动条宽度) > document.body.clientWidth(不包含滚动条宽度)，如果前者为0或为空，则选择后者。
 		 */
 		static get clientWidth():number;
 
 		/**
-		 * 浏览器窗口可视高度。
-		 * 通过分析浏览器信息获得。浏览器多个属性值优先级为：window.innerHeight(包含滚动条高度) > document.body.clientHeight(不包含滚动条高度) > document.documentElement.clientHeight(不包含滚动条高度)，如果前者为0或为空，则选择后者。
+		 * 获得真实的浏览器窗口可视高度（设备垂直方向的像素），不考虑画布是否旋转与设备像素比。
+		 * @readme 通过分析浏览器信息获得。浏览器多个属性值优先级为：window.innerHeight(包含滚动条高度) > document.body.clientHeight(不包含滚动条高度) > document.documentElement.clientHeight(不包含滚动条高度)，如果前者为0或为空，则选择后者。
 		 */
 		static get clientHeight():number;
 
 		/**
-		 * 浏览器窗口物理宽度。考虑了设备像素比。
+		 * 基于视觉水平方向的浏览器窗口物理宽度。考虑了画布是否旋转，设备像素比。
 		 */
 		static get width():number;
 
 		/**
-		 * 浏览器窗口物理高度。考虑了设备像素比。
+		 * 基于视觉垂直方向的浏览器窗口物理高度。考虑了画布是否旋转，设备像素比。
 		 */
 		static get height():number;
 

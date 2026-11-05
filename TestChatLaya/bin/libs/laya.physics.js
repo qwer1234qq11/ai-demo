@@ -16383,17 +16383,19 @@ var box2d = window.box2d = (function (exports) {
             if (!this._body)
                 this._onAwake();
             var p = this._body.GetLocalCenter();
-            p.x = p.x * IPhysics.Physics.PIXEL_RATIO;
-            p.y = p.y * IPhysics.Physics.PIXEL_RATIO;
-            return p;
+            RigidBody._tempPoint.copy(p);
+            RigidBody._tempPoint.x = RigidBody._tempPoint.x * IPhysics.Physics.PIXEL_RATIO;
+            RigidBody._tempPoint.y = RigidBody._tempPoint.y * IPhysics.Physics.PIXEL_RATIO;
+            return RigidBody._tempPoint;
         }
         getWorldCenter() {
             if (!this._body)
                 this._onAwake();
             var p = this._body.GetWorldCenter();
-            p.x = p.x * IPhysics.Physics.PIXEL_RATIO;
-            p.y = p.y * IPhysics.Physics.PIXEL_RATIO;
-            return p;
+            RigidBody._tempPoint.copy(p);
+            RigidBody._tempPoint.x = RigidBody._tempPoint.x * IPhysics.Physics.PIXEL_RATIO;
+            RigidBody._tempPoint.y = RigidBody._tempPoint.y * IPhysics.Physics.PIXEL_RATIO;
+            return RigidBody._tempPoint;
         }
         get type() {
             return this._type;
@@ -16479,6 +16481,7 @@ var box2d = window.box2d = (function (exports) {
                 this._body.SetBullet(value);
         }
     }
+    RigidBody._tempPoint = new Laya.Point();
     Laya.ClassUtils.regClass("laya.physics.RigidBody", RigidBody);
     Laya.ClassUtils.regClass("Laya.RigidBody", RigidBody);
 

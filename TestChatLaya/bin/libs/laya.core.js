@@ -2827,7 +2827,7 @@ window.Laya= (function (exports) {
                 this._setGPUMemory(width * height * 4);
             }
             if (this._canRead) {
-                if (ILaya.Render.isConchApp) {
+                if (ILaya.Render.isConchApp && source._nativeObj) {
                     this._pixels = new Uint8Array(source._nativeObj.getImageData(0, 0, width, height));
                 }
                 else {
@@ -7802,12 +7802,7 @@ window.Laya= (function (exports) {
             return ret;
         }
         getPixels(x, y, width, height) {
-            if (window.conch) {
-                return this._nativeObj.getImageData(x, y, width, height);
-            }
-            else {
-                return this.getTexturePixels(x, y, width, height);
-            }
+            return this.getTexturePixels(x, y, width, height);
         }
         recoverBitmap(onok = null) {
             var url = this._bitmap.url;
@@ -8012,7 +8007,7 @@ window.Laya= (function (exports) {
                 if (u.indexOf('TB/') > -1 || u.indexOf('Taobao/') > -1 || u.indexOf('TM/') > -1) {
                     window.tbMiniGame(Laya, Laya);
                     if (!Laya["TBMiniAdapter"]) {
-                        console.error("请先添加淘宝适配库,详细教程：https://ldc2.layabox.com/doc/?language=zh&nav=zh-ts-5-6-0");
+                        console.error("请先添加淘宝适配库,详细教程：https://ldc2.layabox.com/doc/?language=zh&nav=zh-ts-5-10-0");
                     }
                     else {
                         Laya["TBMiniAdapter"].enable();
@@ -8032,7 +8027,7 @@ window.Laya= (function (exports) {
                 if ("tt" in Browser.window) {
                     window.ttMiniGame(Laya, Laya);
                     if (!Laya["TTMiniAdapter"]) {
-                        console.error("请引入字节跳动小游戏的适配库");
+                        console.error("请引入字节跳动小游戏的适配库,详细教程：https://ldc2.layabox.com/doc/?language=zh&nav=zh-ts-5-8-0");
                     }
                     else {
                         Laya["TTMiniAdapter"].enable();
@@ -8050,7 +8045,7 @@ window.Laya= (function (exports) {
                 else if ("qq" in Browser.window) {
                     window.qqMiniGame(Laya, Laya);
                     if (!Laya["QQMiniAdapter"]) {
-                        console.error("请引入手机QQ小游戏的适配库,详细教程：https://ldc2.layabox.com/doc/?language=zh&nav=zh-ts-5-0-0");
+                        console.error("请引入手机QQ小游戏的适配库,详细教程：https://ldc2.layabox.com/doc/?language=zh&nav=zh-ts-5-5-0");
                     }
                     else {
                         Laya["QQMiniAdapter"].enable();
@@ -8069,7 +8064,7 @@ window.Laya= (function (exports) {
             if ("hbs" in Browser.window) {
                 window.hwMiniGame(Laya, Laya);
                 if (!Laya["HWMiniAdapter"]) {
-                    console.error("请先添加小游戏适配库!");
+                    console.error("请先添加小游戏适配库，详细教程：https://ldc2.layabox.com/doc/?language=zh&nav=zh-ts-5-9-1");
                 }
                 else {
                     Laya["HWMiniAdapter"].enable();
@@ -8105,7 +8100,7 @@ window.Laya= (function (exports) {
             if (u.indexOf('VVGame') > -1) {
                 window.vvMiniGame(Laya, Laya);
                 if (!Laya["VVMiniAdapter"]) {
-                    console.error("请先添加VIVO小游戏适配库,详细教程：https://ldc2.layabox.com/doc/?language=zh&nav=zh-ts-5-4-0");
+                    console.error("请先添加vivo小游戏适配库,详细教程：https://ldc2.layabox.com/doc/?language=zh&nav=zh-ts-5-4-0");
                 }
                 else {
                     Laya["VVMiniAdapter"].enable();
@@ -8148,6 +8143,7 @@ window.Laya= (function (exports) {
             Browser.onIE = !!win.ActiveXObject || "ActiveXObject" in win;
             Browser.onWeiXin = u.indexOf('MicroMessenger') > -1;
             Browser.onSafari = u.indexOf("Safari") > -1;
+            Browser.onChrome = u.indexOf("Chrome") > -1;
             Browser.onPC = !Browser.onMobile;
             Browser.onFirefox = u.indexOf('Firefox') > -1;
             Browser.onEdge = u.indexOf('Edge') > -1;
@@ -8288,7 +8284,7 @@ window.Laya= (function (exports) {
                 CharRender_Canvas.canvas.height = 512;
                 CharRender_Canvas.canvas.style.left = "-10000px";
                 CharRender_Canvas.canvas.style.position = "absolute";
-                document.body.appendChild(CharRender_Canvas.canvas);
+                window.document.body.appendChild(CharRender_Canvas.canvas);
                 this.ctx = CharRender_Canvas.canvas.getContext('2d');
             }
         }
@@ -8354,6 +8350,7 @@ window.Laya= (function (exports) {
             ctx.save();
             ctx.textBaseline = "middle";
             if (lineWidth > 0) {
+                ctx.lineJoin = "round";
                 ctx.strokeStyle = strokeColStr;
                 ctx.lineWidth = lineWidth;
                 ctx.strokeText(char, margin_left, margin_top + sz / 2);
@@ -8386,6 +8383,9 @@ window.Laya= (function (exports) {
                 ctx.font = font;
                 ctx._lastFont = font;
             }
+            if (Browser.window.isIOSHighPerformanceModePlus) {
+                ctx.font = font;
+            }
             cri.width = ctx.measureText(char).width;
             var w = cri.width * this.lastScaleX;
             var h = cri.height * this.lastScaleY;
@@ -8399,6 +8399,7 @@ window.Laya= (function (exports) {
             ctx.clearRect(0, 0, w + 1 + lineWidth, h + 1 + lineWidth);
             ctx.setTransform(1, 0, 0, 1, 0, 0);
             ctx.save();
+            ctx.font = font;
             if (this.scaleFontSize) {
                 ctx.scale(this.lastScaleX, this.lastScaleY);
             }
@@ -8808,16 +8809,27 @@ window.Laya= (function (exports) {
                 this.charRender.fontsz = font._size;
                 imgdt = this.charRender.getCharBmp(str, this.fontStr, lineWidth, color, strokeColor, ri, margin, margin, margin, margin, TextRender.imgdtRect);
                 if (imgdt) {
-                    atlas = this.addBmpData(imgdt, ri);
-                    if (TextRender.isWan1Wan) {
+                    if (imgdt.width > TextRender.atlasWidth || imgdt.height > TextRender.atlasWidth) {
+                        var tex = TextTexture.getTextTexture(imgdt.width, imgdt.height);
+                        tex.addChar(imgdt, 0, 0, ri.uv);
+                        ri.tex = tex;
                         ri.orix = margin;
                         ri.oriy = margin;
+                        tex.ri = ri;
+                        this.isoTextures.push(tex);
                     }
                     else {
-                        ri.orix = (this.fontSizeOffX + lineExt);
-                        ri.oriy = (this.fontSizeOffY + lineExt);
+                        atlas = this.addBmpData(imgdt, ri);
+                        if (TextRender.isWan1Wan) {
+                            ri.orix = margin;
+                            ri.oriy = margin;
+                        }
+                        else {
+                            ri.orix = (this.fontSizeOffX + lineExt);
+                            ri.oriy = (this.fontSizeOffY + lineExt);
+                        }
+                        atlas.charMaps[key] = ri;
                     }
-                    atlas.charMaps[key] = ri;
                 }
             }
             return ri;
@@ -10576,7 +10588,7 @@ window.Laya= (function (exports) {
             var nOdy = ody / olen;
             var alpha = Math.acos(nOdx * ndx + nOdy * ndy);
             var halfAng = Math.PI / 2 - alpha;
-            len1 = r / Math.tan(halfAng);
+            len1 = r * Math.tan(halfAng);
             var ptx1 = len1 * ndx + x1;
             var pty1 = len1 * ndy + y1;
             var orilen = Math.sqrt(len1 * len1 + r * r);
@@ -10779,15 +10791,16 @@ window.Laya= (function (exports) {
             tx += gx;
             ty += gy;
             var uv = tex.uv, w = tex.bitmap.width, h = tex.bitmap.height;
+            var sw = tex.sourceWidth, sh = tex.sourceHeight;
             var top = sizeGrid[0];
             var left = sizeGrid[3];
             var right = sizeGrid[1];
             var bottom = sizeGrid[2];
             var repeat = sizeGrid[4];
-            if (width == w) {
+            if (width == sw) {
                 left = right = 0;
             }
-            if (height == h) {
+            if (height == sh) {
                 top = bottom = 0;
             }
             var d_top = top / h;
@@ -11413,14 +11426,14 @@ window.Laya= (function (exports) {
                 document.body.appendChild(source);
             }
             this.initRender(Render._mainCanvas, width, height);
-            window.requestAnimationFrame(loop);
+            requestAnimationFrame(loop);
             function loop(stamp) {
                 ILaya.stage._loop();
                 if (!!Render._customRequestAnimationFrame && !!Render._loopFunction) {
                     Render._customRequestAnimationFrame(Render._loopFunction);
                 }
                 else
-                    window.requestAnimationFrame(loop);
+                    requestAnimationFrame(loop);
             }
             ILaya.stage.on("visibilitychange", this, this._onVisibilitychange);
         }
@@ -15013,8 +15026,6 @@ window.Laya= (function (exports) {
         _setColorFilter(value) { }
         set filters(value) {
             value && value.length === 0 && (value = null);
-            if (this._cacheStyle.filters == value)
-                return;
             this._getCacheStyle().filters = value ? value.slice() : null;
             if (value && value.length) {
                 this._setColorFilter(value[0]);
@@ -15826,7 +15837,7 @@ window.Laya= (function (exports) {
                 if (word == null)
                     word = "";
                 x = startX - (this._clipPoint ? this._clipPoint.x : 0);
-                y = startY + lineHeight * i - (this._clipPoint ? this._clipPoint.y : 0);
+                y = startY + 2 + lineHeight * i - (this._clipPoint ? this._clipPoint.y : 0);
                 this.underline && this._drawUnderline(textAlgin, x, y, i);
                 if (tCurrBitmapFont) {
                     var tWidth = this.width;
@@ -15994,7 +16005,7 @@ window.Laya= (function (exports) {
                         var newLine = line.substring(startIndex, j);
                         var ccode = newLine.charCodeAt(newLine.length - 1);
                         if (ccode < 0x4e00 || ccode > 0x9fa5) {
-                            var execResult = /(?:[^\s\!-\/])+$/.exec(newLine);
+                            var execResult = /(?:\w|-)+$/.exec(newLine);
                             if (execResult) {
                                 j = execResult.index + startIndex;
                                 if (execResult.index == 0)
@@ -16079,10 +16090,7 @@ window.Laya= (function (exports) {
         set scrollX(value) {
             if (this.overflow != Text.SCROLL || (this.textWidth < this._width || !this._clipPoint))
                 return;
-            value = value < this.padding[3] ? this.padding[3] : value;
-            var maxScrollX = this._textWidth - this._width;
-            value = value > maxScrollX ? maxScrollX : value;
-            this._clipPoint.x = value;
+            this._clipPoint.x = value > this._textWidth ? this._textWidth : value;
             this._renderText();
         }
         get scrollX() {
@@ -16093,10 +16101,7 @@ window.Laya= (function (exports) {
         set scrollY(value) {
             if (this.overflow != Text.SCROLL || (this.textHeight < this._height || !this._clipPoint))
                 return;
-            value = value < this.padding[0] ? this.padding[0] : value;
-            var maxScrollY = this._textHeight - this._height;
-            value = value > maxScrollY ? maxScrollY : value;
-            this._clipPoint.y = value;
+            this._clipPoint.y = value > this._textHeight ? this._textHeight : value;
             this._renderText();
         }
         get scrollY() {
@@ -16388,8 +16393,6 @@ window.Laya= (function (exports) {
             ILaya.stage.focus = null;
             this.event(Event.BLUR);
             this.event(Event.CHANGE);
-            if (ILaya.Render.isConchApp)
-                this.nativeInput.blur();
             ILaya.Browser.onPC && ILaya.systemTimer.clear(this, this._syncInputTransform);
         }
         _onKeyDown(e) {
@@ -16926,10 +16929,7 @@ window.Laya= (function (exports) {
             if (Input.isInputting && ILaya.stage.focus && ILaya.stage.focus["focus"] && !ILaya.stage.focus.contains(this._target)) {
                 var pre_input = ILaya.stage.focus['_tf'] || ILaya.stage.focus;
                 var new_input = ele['_tf'] || ele;
-                if (new_input instanceof Input && new_input.multiline == pre_input.multiline)
-                    pre_input['_focusOut']();
-                else
-                    pre_input.focus = false;
+                pre_input.focus = false;
             }
             TouchManager.I.onMouseDown(ele, this._tTouchID, this._isLeftMouse);
         }
@@ -17398,7 +17398,7 @@ window.Laya= (function (exports) {
                 this._previousOrientation = orientation;
                 if (this._isInputting())
                     return;
-                if (Browser.onSafari)
+                if (Browser.onSafari && !Browser.onChrome)
                     this._safariOffsetY = (Browser.window.__innerHeight || Browser.document.body.clientHeight || Browser.document.documentElement.clientHeight) - Browser.window.innerHeight;
                 this._resetCanvas();
             });
@@ -17463,7 +17463,6 @@ window.Laya= (function (exports) {
             }
             this.canvasRotation = rotation;
             var canvas = Render._mainCanvas;
-            var canvasStyle = canvas.source.style;
             var mat = this._canvasTransform.identity();
             var scaleMode = this._scaleMode;
             var scaleX = screenWidth / this.designWidth;
@@ -17566,16 +17565,20 @@ window.Laya= (function (exports) {
             mat.tx = this._formatData(mat.tx);
             mat.ty = this._formatData(mat.ty);
             super.set_transform(this.transform);
+            Stage._setStageStyle(canvas, canvasWidth, canvasHeight, mat);
+            if (this._safariOffsetY)
+                mat.translate(0, -this._safariOffsetY);
+            this.visible = true;
+            this._repaint |= SpriteConst.REPAINT_CACHE;
+            this.event(Event.RESIZE);
+        }
+        static _setStageStyle(mainCanv, canvasWidth, canvasHeight, mat) {
+            var canvasStyle = mainCanv.source.style;
             canvasStyle.transformOrigin = canvasStyle.webkitTransformOrigin = canvasStyle.msTransformOrigin = canvasStyle.mozTransformOrigin = canvasStyle.oTransformOrigin = "0px 0px 0px";
             canvasStyle.transform = canvasStyle.webkitTransform = canvasStyle.msTransform = canvasStyle.mozTransform = canvasStyle.oTransform = "matrix(" + mat.toString() + ")";
             canvasStyle.width = canvasWidth;
             canvasStyle.height = canvasHeight;
-            if (this._safariOffsetY)
-                mat.translate(0, -this._safariOffsetY);
             mat.translate(parseInt(canvasStyle.left) || 0, parseInt(canvasStyle.top) || 0);
-            this.visible = true;
-            this._repaint |= SpriteConst.REPAINT_CACHE;
-            this.event(Event.RESIZE);
         }
         _formatData(value) {
             if (Math.abs(value) < 0.000001)
@@ -17614,6 +17617,9 @@ window.Laya= (function (exports) {
                 this._wgColor = ColorUtils.create(value).arrColor;
             else
                 this._wgColor = null;
+            Stage._setStyleBgColor(value);
+        }
+        static _setStyleBgColor(value) {
             if (value) {
                 Render.canvas.style.background = value;
             }
@@ -17665,9 +17671,12 @@ window.Laya= (function (exports) {
         set visible(value) {
             if (this.visible !== value) {
                 super.set_visible(value);
-                var style = Render._mainCanvas.source.style;
-                style.visibility = value ? "visible" : "hidden";
+                Stage._setVisibleStyle(value);
             }
+        }
+        static _setVisibleStyle(value) {
+            var style = Render._mainCanvas.source.style;
+            style.visibility = value ? "visible" : "hidden";
         }
         get visible() {
             return super.visible;
@@ -19042,6 +19051,9 @@ window.Laya= (function (exports) {
             if (headers) {
                 for (var i = 0; i < headers.length; i++) {
                     http.setRequestHeader(headers[i++], headers[i]);
+                    if (headers[i] === "application/json" && !(data instanceof ArrayBuffer) && typeof data !== "string") {
+                        isJson = true;
+                    }
                 }
             }
             else if (!(window.conch)) {
@@ -22965,10 +22977,7 @@ window.Laya= (function (exports) {
             ArrayBuffer.prototype.slice || (ArrayBuffer.prototype.slice = Laya._arrayBufferSlice);
             Browser.__init__();
             var mainCanv = Browser.mainCanvas = new HTMLCanvas(true);
-            var style = mainCanv.source.style;
-            style.position = 'absolute';
-            style.top = style.left = "0px";
-            style.background = "#000000";
+            Laya._setStyleInfo(mainCanv);
             if (!Browser.onKGMiniGame && !Browser.onAlipayMiniGame) {
                 Browser.container.appendChild(mainCanv.source);
             }
@@ -23015,7 +23024,7 @@ window.Laya= (function (exports) {
             MeshQuadTexture.__int__();
             MeshVG.__init__();
             MeshTexture.__init__();
-            Laya.render = new Render(0, 0, Browser.mainCanvas);
+            Laya.render = Laya.createRender();
             exports.render = Laya.render;
             Laya.stage.size(width, height);
             window.stage = Laya.stage;
@@ -23033,6 +23042,15 @@ window.Laya= (function (exports) {
             Value2D._initone(ShaderDefines2D.PRIMITIVE, PrimitiveSV);
             Value2D._initone(ShaderDefines2D.SKINMESH, SkinSV);
             return Render.canvas;
+        }
+        static _setStyleInfo(mainCanv) {
+            let style = mainCanv.source.style;
+            style.position = 'absolute';
+            style.top = style.left = "0px";
+            style.background = "#000000";
+        }
+        static createRender() {
+            return new Render(0, 0, Browser.mainCanvas);
         }
         static _getUrlPath() {
             return URL.getPath(location.protocol + "//" + location.host + location.pathname);
@@ -23145,7 +23163,7 @@ window.Laya= (function (exports) {
     Laya.lateTimer = null;
     Laya.timer = null;
     Laya.loader = null;
-    Laya.version = "2.13.0";
+    Laya.version = "2.13.5";
     Laya._isinit = false;
     Laya.isWXOpenDataContext = false;
     Laya.isWXPosMsg = false;

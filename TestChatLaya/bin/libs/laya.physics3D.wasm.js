@@ -424,15 +424,15 @@ window.Physics3D = function (initialMemory, interactive) {
 	        return this._mesh;
 	    }
 	    set mesh(value) {
+	        if (!value)
+	            return;
 	        if (this._mesh !== value) {
 	            var bt = Laya.ILaya3D.Physics3D._bullet;
+	            this._physicMesh = value._getPhysicMesh();
 	            if (this._mesh) {
 	                bt.btCollisionShape_destroy(this._btShape);
 	            }
-	            if (value) {
-	                this._btShape = bt.btGImpactMeshShape_create(value._getPhysicMesh());
-	                bt.btGImpactShapeInterface_updateBound(this._btShape);
-	            }
+	            this._setPhysicsMesh();
 	            this._mesh = value;
 	        }
 	    }
@@ -442,6 +442,25 @@ window.Physics3D = function (initialMemory, interactive) {
 	    set convex(value) {
 	        this._convex = value;
 	    }
+	    _setPhysicsMesh() {
+	        if (this._attatchedCollisionObject) {
+	            {
+	                this._createBvhTriangleCollider();
+	            }
+	        }
+	    }
+	    _createDynamicMeshCollider() {
+	        var bt = Laya.ILaya3D.Physics3D._bullet;
+	        if (this._physicMesh) {
+	            this._btShape = bt.btGImpactMeshShape_create(this._physicMesh);
+	            bt.btGImpactShapeInterface_updateBound(this._btShape);
+	        }
+	    }
+	    _createBvhTriangleCollider() {
+	        var bt = Laya.ILaya3D.Physics3D._bullet;
+	        if (this._physicMesh)
+	            this._btShape = bt.btBvhTriangleMeshShape_create(this._physicMesh);
+	    }
 	    _setScale(value) {
 	        if (this._compoundParent) {
 	            this.updateLocalTransformations();
@@ -450,7 +469,9 @@ window.Physics3D = function (initialMemory, interactive) {
 	            var bt = Laya.ILaya3D.Physics3D._bullet;
 	            bt.btVector3_setValue(ColliderShape._btScale, value.x, value.y, value.z);
 	            bt.btCollisionShape_setLocalScaling(this._btShape, ColliderShape._btScale);
-	            bt.btGImpactShapeInterface_updateBound(this._btShape);
+	            if (this._attatchedCollisionObject && this._attatchedCollisionObject._enableProcessCollisions) {
+	                bt.btGImpactShapeInterface_updateBound(this._btShape);
+	            }
 	        }
 	    }
 	    cloneTo(destObject) {
@@ -645,6 +666,7 @@ window.Physics3D = function (initialMemory, interactive) {
 	                value._attatched = true;
 	                value._attatchedCollisionObject = this;
 	            }
+	            (value._physicMesh) && (value._setPhysicsMesh());
 	            if (this._btColliderObject) {
 	                Laya.ILaya3D.Physics3D._bullet.btCollisionObject_setCollisionShape(this._btColliderObject, value._btShape);
 	                var canInSimulation = this._simulation && this._enabled;
@@ -724,7 +746,7 @@ window.Physics3D = function (initialMemory, interactive) {
 	    _onDestroy() {
 	        delete PhysicsComponent._physicObjectsMap[this.id];
 	        Laya.ILaya3D.Physics3D._bullet.btCollisionObject_destroy(this._btColliderObject);
-	        this._colliderShape.destroy();
+	        this._colliderShape && this._colliderShape.destroy();
 	        super._onDestroy();
 	        this._btColliderObject = null;
 	        this._colliderShape = null;
@@ -1321,7 +1343,6 @@ window.Physics3D = function (initialMemory, interactive) {
 	        this._btAllHitsRayResultCallback = bt.AllHitsRayResultCallback_create(this._btVector3Zero, this._btVector3Zero);
 	        this._btClosestConvexResultCallback = bt.ClosestConvexResultCallback_create(this._btVector3Zero, this._btVector3Zero);
 	        this._btAllConvexResultCallback = bt.AllConvexResultCallback_create(this._btVector3Zero, this._btVector3Zero);
-	        this.setHitsRayResultCallbackFlag();
 	        bt.btGImpactCollisionAlgorithm_RegisterAlgorithm(this._btDispatcher);
 	    }
 	    static __init__() {

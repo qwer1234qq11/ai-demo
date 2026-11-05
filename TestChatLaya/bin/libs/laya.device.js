@@ -225,11 +225,11 @@
 	    }
 	    createDomElement() {
 	        this._source = this.video = Laya.ILaya.Browser.createElement("video");
+	        this.video.setAttribute('crossorigin', 'Anonymous');
 	        var style = this.video.style;
 	        style.position = 'absolute';
 	        style.top = '0px';
 	        style.left = '0px';
-	        this.video.setAttribute('crossorigin', 'anonymous');
 	        this.video.addEventListener("loadedmetadata", () => {
 	            this._w = this.video.videoWidth;
 	            this._h = this.video.videoHeight;

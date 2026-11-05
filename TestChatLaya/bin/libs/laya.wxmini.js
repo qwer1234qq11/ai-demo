@@ -74,14 +74,17 @@ window.wxMiniGame = function (exports, Laya) {
                 fileUrl = filePath;
             }
             fileUrl = Laya.URL.getAdptedFilePath(fileUrl);
-            MiniFileMgr.fs.readFile({ filePath: fileUrl, encoding: encoding, success: function (data) {
+            MiniFileMgr.fs.readFile({
+                filePath: fileUrl, encoding: encoding,
+                success: function (data) {
                     callBack != null && callBack.runWith([0, data]);
                 }, fail: function (data) {
                     if (data && readyUrl != "")
                         MiniFileMgr.downFiles(readyUrl, encoding, callBack, readyUrl, isSaveFile, fileType);
                     else
                         callBack != null && callBack.runWith([1]);
-                } });
+                }
+            });
         }
         static isFile(url) {
             let stat;
@@ -94,7 +97,9 @@ window.wxMiniGame = function (exports, Laya) {
             return stat.isFile();
         }
         static downFiles(fileUrl, encoding = "utf8", callBack = null, readyUrl = "", isSaveFile = false, fileType = "", isAutoClear = true) {
-            var downloadTask = MiniFileMgr.down({ url: fileUrl, success: function (data) {
+            var downloadTask = MiniFileMgr.down({
+                url: fileUrl,
+                success: function (data) {
                     if (data.statusCode === 200)
                         MiniFileMgr.readFile(data.tempFilePath, encoding, callBack, readyUrl, isSaveFile, fileType, isAutoClear);
                     else if (data.statusCode === 403) {
@@ -105,15 +110,18 @@ window.wxMiniGame = function (exports, Laya) {
                     }
                 }, fail: function (data) {
                     callBack != null && callBack.runWith([1, data]);
-                } });
+                }
+            });
             downloadTask.onProgressUpdate(function (data) {
                 callBack != null && callBack.runWith([2, data.progress]);
             });
         }
         static readFile(filePath, encoding = "utf8", callBack = null, readyUrl = "", isSaveFile = false, fileType = "", isAutoClear = true) {
             filePath = Laya.URL.getAdptedFilePath(filePath);
-            MiniFileMgr.fs.readFile({ filePath: filePath, encoding: encoding, success: function (data) {
-                    if ((filePath.indexOf("http://") != -1 || filePath.indexOf("https://") != -1) && filePath.indexOf(MiniAdpter.window.wx.env.USER_DATA_PATH) == -1) {
+            MiniFileMgr.fs.readFile({
+                filePath: filePath, encoding: encoding,
+                success: function (data) {
+                    if ((readyUrl.indexOf("http://") != -1 || readyUrl.indexOf("https://") != -1) && filePath.indexOf(MiniAdpter.window.wx.env.USER_DATA_PATH) == -1) {
                         if (MiniAdpter.AutoCacheDownFile || isSaveFile) {
                             callBack != null && callBack.runWith([0, data]);
                             MiniFileMgr.copyTOCache(filePath, readyUrl, null, encoding, isAutoClear);
@@ -126,10 +134,13 @@ window.wxMiniGame = function (exports, Laya) {
                 }, fail: function (data) {
                     if (data)
                         callBack != null && callBack.runWith([1, data]);
-                } });
+                }
+            });
         }
         static downOtherFiles(fileUrl, callBack = null, readyUrl = "", isSaveFile = false, isAutoClear = true) {
-            MiniFileMgr.down({ url: fileUrl, success: function (data) {
+            MiniFileMgr.down({
+                url: fileUrl,
+                success: function (data) {
                     if (data.statusCode === 200) {
                         if ((MiniAdpter.autoCacheFile || isSaveFile) && readyUrl.indexOf("qlogo.cn") == -1 && readyUrl.indexOf(".php") == -1) {
                             callBack != null && callBack.runWith([0, data.tempFilePath]);
@@ -143,7 +154,8 @@ window.wxMiniGame = function (exports, Laya) {
                     }
                 }, fail: function (data) {
                     callBack != null && callBack.runWith([1, data]);
-                } });
+                }
+            });
         }
         static copyFile(src, dest, complete = null) {
             MiniFileMgr.fs.copyFile({
@@ -207,11 +219,14 @@ window.wxMiniGame = function (exports, Laya) {
                                 MiniAdpter.minClearSize = data.size;
                             MiniFileMgr.onClearCacheRes();
                         }
-                        MiniFileMgr.fs.copyFile({ srcPath: tempFilePath, destPath: saveFilePath, success: function (data2) {
+                        MiniFileMgr.fs.copyFile({
+                            srcPath: tempFilePath, destPath: saveFilePath,
+                            success: function (data2) {
                                 MiniFileMgr.onSaveFile(readyUrl, tempFileName, true, encoding, callBack, data.size);
                             }, fail: function (data) {
                                 callBack != null && callBack.runWith([1, data]);
-                            } });
+                            }
+                        });
                     },
                     fail: function (data) {
                         callBack != null && callBack.runWith([1, data]);
@@ -228,7 +243,7 @@ window.wxMiniGame = function (exports, Laya) {
             }
             MiniFileMgr.sortOn(tempFileListArr, "times", MiniFileMgr.NUMERIC);
             var clearSize = 0;
-            for (var i = 1, sz = tempFileListArr.length; i < sz; i++) {
+            for (var i = 0, sz = tempFileListArr.length; i < sz; i++) {
                 var fileObj = tempFileListArr[i];
                 if (clearSize >= memSize)
                     break;
@@ -249,21 +264,27 @@ window.wxMiniGame = function (exports, Laya) {
         static deleteFile(tempFileName, readyUrl = "", callBack = null, encoding = "", fileSize = 0) {
             var fileObj = MiniFileMgr.getFileInfo(readyUrl);
             var deleteFileUrl = MiniFileMgr.getFileNativePath(fileObj.md5);
-            MiniFileMgr.fs.unlink({ filePath: deleteFileUrl, success: function (data) {
+            MiniFileMgr.fs.unlink({
+                filePath: deleteFileUrl,
+                success: function (data) {
                     if (tempFileName != "") {
                         var saveFilePath = MiniFileMgr.getFileNativePath(tempFileName);
-                        MiniFileMgr.fs.copyFile({ srcPath: tempFileName, destPath: saveFilePath, success: function (data) {
+                        MiniFileMgr.fs.copyFile({
+                            srcPath: tempFileName, destPath: saveFilePath,
+                            success: function (data) {
                                 MiniFileMgr.onSaveFile(readyUrl, tempFileName, true, encoding, callBack, fileSize);
                             }, fail: function (data) {
                                 callBack != null && callBack.runWith([1, data]);
-                            } });
+                            }
+                        });
                     }
                     else {
                         MiniFileMgr.onSaveFile(readyUrl, tempFileName, false, encoding, callBack, fileSize);
                     }
                 }, fail: function (data) {
                     callBack != null && callBack.runWith([1, data]);
-                } });
+                }
+            });
             if (readyUrl && readyUrl != "" && readyUrl.indexOf(".zip") != -1) {
                 var nativepath = MiniAdpter.zipHeadFiles[readyUrl];
                 if (nativepath) {
@@ -283,7 +304,7 @@ window.wxMiniGame = function (exports, Laya) {
                 if (key != "fileUsedSize")
                     tempFileListArr.push(MiniFileMgr.filesListObj[key]);
             }
-            for (var i = 1, sz = tempFileListArr.length; i < sz; i++) {
+            for (var i = 0, sz = tempFileListArr.length; i < sz; i++) {
                 var fileObj = tempFileListArr[i];
                 MiniFileMgr.deleteFile("", fileObj.readyUrl);
             }
@@ -318,9 +339,12 @@ window.wxMiniGame = function (exports, Laya) {
         }
         static writeFilesList(fileurlkey, filesListStr, isAdd) {
             var listFilesPath = MiniFileMgr.fileNativeDir + "/" + MiniFileMgr.fileListName;
-            MiniFileMgr.fs.writeFile({ filePath: listFilesPath, encoding: 'utf8', data: filesListStr, success: function (data) {
+            MiniFileMgr.fs.writeFile({
+                filePath: listFilesPath, encoding: 'utf8', data: filesListStr,
+                success: function (data) {
                 }, fail: function (data) {
-                } });
+                }
+            });
             if (!MiniAdpter.isZiYu && MiniAdpter.isPosMsgYu) {
                 MiniAdpter.window.wx.postMessage({ url: fileurlkey, data: MiniFileMgr.filesListObj[fileurlkey], isLoad: "filenative", isAdd: isAdd });
             }
@@ -347,14 +371,17 @@ window.wxMiniGame = function (exports, Laya) {
             }
         }
         static existDir(dirPath, callBack) {
-            MiniFileMgr.fs.mkdir({ dirPath: dirPath, success: function (data) {
+            MiniFileMgr.fs.mkdir({
+                dirPath: dirPath,
+                success: function (data) {
                     callBack != null && callBack.runWith([0, { data: JSON.stringify({}) }]);
                 }, fail: function (data) {
                     if (data.errMsg.indexOf("file already exists") != -1)
                         MiniFileMgr.readSync(MiniFileMgr.fileListName, "utf8", callBack);
                     else
                         callBack != null && callBack.runWith([1, data]);
-                } });
+                }
+            });
         }
         static readSync(filePath, encoding = "utf8", callBack = null, readyUrl = "") {
             var fileUrl = MiniFileMgr.getFileNativePath(filePath);
@@ -754,6 +781,15 @@ window.wxMiniGame = function (exports, Laya) {
         _loadResourceFilter(type, url) {
             var thisLoader = this;
             this.sourceUrl = Laya.URL.formatURL(url);
+            var ext = Laya.Utils.getFileExtension(url);
+            if (ext == "pvr" || ext == "ktx") {
+                if (thisLoader._http) {
+                    thisLoader._http._url = url;
+                }
+                else {
+                    thisLoader._url = url;
+                }
+            }
             if (MiniFileMgr.isNetFile(url)) {
                 if (MiniFileMgr.loadPath != "") {
                     url = url.split(MiniFileMgr.loadPath)[1];
@@ -923,29 +959,51 @@ window.wxMiniGame = function (exports, Laya) {
             }
         }
         static _transformImgUrl(url, type, thisLoader) {
+            var ext = Laya.Utils.getFileExtension(url);
+            var tempUrl = Laya.URL.formatURL(url);
             if (MiniAdpter.isZiYu || MiniFileMgr.isLocalNativeFile(url)) {
                 if (MiniFileMgr.isLocalNativeZipFile(url)) {
                     url = MiniFileMgr.getFileNativePath(url);
                 }
-                thisLoader._loadImage(url, false);
+                MiniLoader.loadNativeImage(url, thisLoader);
                 return;
             }
             if (!MiniAdpter.autoCacheFile) {
                 thisLoader._loadImage(url);
             }
             else {
-                var tempUrl = Laya.URL.formatURL(url);
                 if (!MiniFileMgr.isLocalNativeFile(url) && !MiniFileMgr.getFileInfo(tempUrl)) {
                     if (MiniFileMgr.isNetFile(tempUrl)) {
-                        MiniFileMgr.downOtherFiles(tempUrl, new Laya.Handler(MiniLoader, MiniLoader.onDownImgCallBack, [url, thisLoader]), tempUrl);
+                        if (ext === "ktx" || ext === "pvr") {
+                            MiniFileMgr.downFiles(tempUrl, "", new Laya.Handler(MiniLoader, MiniLoader.onReadNativeCallBack, [url, "", thisLoader]), tempUrl, true);
+                        }
+                        else {
+                            MiniFileMgr.downOtherFiles(tempUrl, new Laya.Handler(MiniLoader, MiniLoader.onDownImgCallBack, [url, thisLoader]), tempUrl);
+                        }
                     }
                     else {
-                        MiniLoader.onCreateImage(url, thisLoader, true);
+                        MiniLoader.loadNativeImage(url, thisLoader);
                     }
                 }
                 else {
-                    MiniLoader.onCreateImage(url, thisLoader);
+                    var fileObj = MiniFileMgr.getFileInfo(tempUrl);
+                    if (fileObj && (ext === "ktx" || ext === "pvr")) {
+                        fileObj.encoding = "";
+                        MiniFileMgr.readFile(MiniFileMgr.getFileNativePath(fileObj.md5), "", new Laya.Handler(MiniLoader, MiniLoader.onReadNativeCallBack, [tempUrl, "", thisLoader]), tempUrl);
+                    }
+                    else {
+                        MiniLoader.loadNativeImage(url, thisLoader);
+                    }
                 }
+            }
+        }
+        static loadNativeImage(url, thisLoader = null) {
+            var ext = Laya.Utils.getFileExtension(url);
+            if (ext === "ktx" || ext === "pvr") {
+                MiniFileMgr.readFile(url, "", new Laya.Handler(MiniLoader, MiniLoader.onReadNativeCallBack, [url, "", thisLoader]), url);
+            }
+            else {
+                MiniLoader.onCreateImage(url, thisLoader, true);
             }
         }
         static onDownImgCallBack(sourceUrl, thisLoader, errorCode, tempFilePath = "") {
@@ -1049,7 +1107,7 @@ window.wxMiniGame = function (exports, Laya) {
             MiniAdpter.window = window;
             if (!MiniAdpter.window.hasOwnProperty("wx"))
                 return;
-            if (MiniAdpter.window.navigator.userAgent.indexOf('MiniGame') < 0)
+            if (!MiniAdpter.window.conch && MiniAdpter.window.navigator.userAgent.indexOf('MiniGame') < 0)
                 return;
             MiniAdpter.isZiYu = isSon;
             MiniAdpter.isPosMsgYu = isPosMsg;
@@ -1072,27 +1130,51 @@ window.wxMiniGame = function (exports, Laya) {
             };
             MiniAdpter.window.CanvasRenderingContext2D = function () {
             };
-            MiniAdpter.window.CanvasRenderingContext2D.prototype = MiniAdpter.window.wx.createCanvas().getContext('2d').__proto__;
-            MiniAdpter.window.document.body.appendChild = function () {
-            };
-            MiniAdpter.EnvConfig.pixelRatioInt = 0;
-            Laya.Browser["_pixelRatio"] = MiniAdpter.pixelRatio();
-            MiniAdpter._preCreateElement = Laya.Browser.createElement;
-            Laya.Browser["createElement"] = MiniAdpter.createElement;
-            Laya.RunDriver.createShaderCondition = MiniAdpter.createShaderCondition;
-            Laya.Utils['parseXMLFromString'] = MiniAdpter.parseXMLFromString;
-            Laya.Input['_createInputElement'] = MiniInput['_createInputElement'];
-            if (!window.ImageData) {
-                window.ImageData = ImageDataPolyfill;
+            if (!MiniAdpter.window.conch) {
+                MiniAdpter.window.CanvasRenderingContext2D.prototype = MiniAdpter.window.wx.createCanvas().getContext('2d').__proto__;
+                MiniAdpter.window.document.body.appendChild = function () {
+                };
+                MiniAdpter.EnvConfig.pixelRatioInt = 0;
+                Laya.Browser["_pixelRatio"] = MiniAdpter.pixelRatio();
+                MiniAdpter._preCreateElement = Laya.Browser.createElement;
+                Laya.Browser["createElement"] = MiniAdpter.createElement;
+                Laya.RunDriver.createShaderCondition = MiniAdpter.createShaderCondition;
+                Laya.Utils['parseXMLFromString'] = MiniAdpter.parseXMLFromString;
+                Laya.Input['_createInputElement'] = MiniInput['_createInputElement'];
+                if (!window.ImageData) {
+                    window.ImageData = ImageDataPolyfill;
+                }
+            }
+            else {
+                MiniFileMgr.fs.readFile({ filePath: "app/appConfig.json", encoding: "utf8", success: function (res) {
+                        var preDownloadFiles = JSON.parse(res.data).preDownloadFiles;
+                        for (var item in preDownloadFiles) {
+                            MiniAdpter.preDownloadFiles[preDownloadFiles[item]] = true;
+                        }
+                    }, fail: function (res) {
+                    }
+                });
+                MiniAdpter._preCreateElement = Laya.Browser.createElement;
+                Laya.Browser["createElement"] = function (type) {
+                    if (type == "textarea" || type == "input") {
+                        return MiniAdpter.onCreateInput(type);
+                    }
+                    else {
+                        return MiniAdpter._preCreateElement(type);
+                    }
+                };
+                Laya.Input['_createInputElement'] = MiniInput['_createInputElement'];
             }
             Laya.Loader.prototype._loadResourceFilter = MiniLoader.prototype._loadResourceFilter;
             Laya.Loader.prototype.originComplete = Laya.Loader.prototype.complete;
             Laya.Loader.prototype.complete = MiniLoader.prototype.complete;
             Laya.Loader.prototype._loadSound = MiniLoader.prototype._loadSound;
             Laya.Loader.prototype._loadHttpRequestWhat = MiniLoader.prototype._loadHttpRequestWhat;
-            Laya.LocalStorage._baseClass = MiniLocalStorage;
-            MiniLocalStorage.__init__();
-            MiniAdpter.window.wx.onMessage && MiniAdpter.window.wx.onMessage(MiniAdpter._onMessage);
+            if (!MiniAdpter.window.conch) {
+                Laya.LocalStorage._baseClass = MiniLocalStorage;
+                MiniLocalStorage.__init__();
+                MiniAdpter.window.wx.onMessage && MiniAdpter.window.wx.onMessage(MiniAdpter._onMessage);
+            }
         }
         static _onMessage(data) {
             switch (data.type) {
@@ -1455,6 +1537,7 @@ window.wxMiniGame = function (exports, Laya) {
     MiniAdpter.subNativeheads = [];
     MiniAdpter.subMaps = [];
     MiniAdpter.AutoCacheDownFile = false;
+    MiniAdpter.preDownloadFiles = {};
     MiniAdpter.parseXMLFromString = function (value) {
         var rst;
         value = value.replace(/>\s+</g, '><');
@@ -1605,13 +1688,13 @@ window.wxMiniGame = function (exports, Laya) {
         on(eventType, ths, callBack) {
             if (eventType == "loadedmetadata") {
                 this.onPlayFunc = callBack.bind(ths);
-                this.videoElement.onPlay = this.onPlayFunction.bind(this);
+                this.videoElement.onPlay(this.onPlayFunction.bind(this));
             }
             else if (eventType == "ended") {
                 this.onEndedFunC = callBack.bind(ths);
-                this.videoElement.onEnded = this.onEndedFunction.bind(this);
+                this.videoElement.onEnded(this.onEndedFunction.bind(this));
             }
-            this.videoElement.onTimeUpdate = this.onTimeUpdateFunc.bind(this);
+            this.videoElement.onTimeUpdate(this.onTimeUpdateFunc.bind(this));
         }
         onTimeUpdateFunc(data) {
             this.position = data.position;
@@ -1636,11 +1719,11 @@ window.wxMiniGame = function (exports, Laya) {
         off(eventType, ths, callBack) {
             if (eventType == "loadedmetadata") {
                 this.onPlayFunc = callBack.bind(ths);
-                this.videoElement.offPlay = this.onPlayFunction.bind(this);
+                this.videoElement.offPlay(this.onPlayFunction.bind(this));
             }
             else if (eventType == "ended") {
                 this.onEndedFunC = callBack.bind(ths);
-                this.videoElement.offEnded = this.onEndedFunction.bind(this);
+                this.videoElement.offEnded(this.onEndedFunction.bind(this));
             }
         }
         load(url) {

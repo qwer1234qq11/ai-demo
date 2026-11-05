@@ -369,7 +369,7 @@ gulp.task("pluginEngin_OPPO", ["version_OPPO"], function(cb) {
 		let suffix = EngineVersion.includes("beta") ? `_beta${EngineVersion.split("beta")[1]}` : "";
 		let engineURL;
 		if (canUsePluginEngine(EngineVersion, "2.7.2")) { // 2.7.2 开始，下载地址更新为 cos 服务器
-			engineURL = `https://ldc-1251285021.cos.ap-shanghai.myqcloud.com/download/Libs/LayaAirJS_${engineNum}${suffix}.zip`;
+			engineURL = `https://ldc-1251285021.file.myqcloud.com/download/Libs/LayaAirJS_${engineNum}${suffix}.zip`;
 		} else {
 			engineURL = `http://ldc.layabox.com/download/LayaAirJS_${engineNum}${suffix}.zip`;
 		}

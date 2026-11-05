@@ -258,7 +258,7 @@
 	            let dataStride = vertexStride / dataByteStride;
 	            let elementByteOffset = accessor.byteOffset || 0;
 	            let elementOffset = elementByteOffset / dataByteStride;
-	            let dataReader = new constructor(buffer, bufferView.byteOffset || 0);
+	            let dataReader = new constructor(buffer, bufferView.byteOffset || 0, bufferView.byteLength / dataByteStride);
 	            let res = new constructor(accessorDataCount);
 	            let resIndex = 0;
 	            for (let index = 0; index < count; index++) {

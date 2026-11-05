@@ -547,6 +547,7 @@
 	        this.octreeInitialCenter = new Vector3(0, 0, 0);
 	        this.octreeMinNodeSize = 2.0;
 	        this.octreeLooseness = 1.25;
+	        this.distanceVolumCull = false;
 	        this.debugFrustumCulling = false;
 	        this.pbrRenderQuality = exports.PBRRenderQuality.High;
 	        this.isUseCannonPhysicsEngine = false;
@@ -3172,6 +3173,7 @@
 	        this.updateMark = -1;
 	        this.type = -1;
 	        this.fullPath = null;
+	        this.nodePath = null;
 	        this.propertyOwner = null;
 	        this.property = null;
 	        this.defaultValue = null;
@@ -3282,6 +3284,7 @@
 	            keyframeNodeOwner.indexInList = this._keyframeNodeOwners.length;
 	            keyframeNodeOwner.referenceCount = 1;
 	            keyframeNodeOwner.propertyOwner = propertyOwner;
+	            keyframeNodeOwner.nodePath = node.nodePath;
 	            var propertyCount = node.propertyCount;
 	            var propertys = [];
 	            for (i = 0; i < propertyCount; i++)
@@ -3670,8 +3673,9 @@
 	            var nodeOwner = nodeOwners[i];
 	            if (nodeOwner) {
 	                var node = nodes.getNodeByIndex(i);
-	                if (controllerLayer.avatarMask && (!controllerLayer.avatarMask.getTransformActive(node.nodePath)))
+	                if (controllerLayer.avatarMask && (!controllerLayer.avatarMask.getTransformActive(node.nodePath))) {
 	                    continue;
+	                }
 	                var pro = nodeOwner.propertyOwner;
 	                if (pro) {
 	                    switch (nodeOwner.type) {
@@ -3729,7 +3733,9 @@
 	                var destIndex = destDataIndices[i];
 	                var srcValue = srcIndex !== -1 ? srcRealtimeDatas[srcIndex] : destNodeOwners[destIndex].defaultValue;
 	                var desValue = destIndex !== -1 ? destRealtimeDatas[destIndex] : srcNodeOwners[srcIndex].defaultValue;
-	                this._applyCrossData(nodeOwner, additive, weight, isFirstLayer, srcValue, desValue, crossWeight);
+	                if (!controllerLayer.avatarMask || controllerLayer.avatarMask.getTransformActive(nodeOwner.nodePath)) {
+	                    this._applyCrossData(nodeOwner, additive, weight, isFirstLayer, srcValue, desValue, crossWeight);
+	                }
 	            }
 	        }
 	    }
@@ -5963,6 +5969,13 @@
 	    applyVertexBuffer(vertexBuffer) {
 	        if (Laya.BufferStateBase._curBindedBufferState === this) {
 	            var gl = Laya.LayaGL.instance;
+	            if (this.vertexDeclaration) {
+	                let oriData = this.vertexDeclaration._shaderValues.getData();
+	                for (var k in oriData) {
+	                    let loc = parseInt(k);
+	                    gl.disableVertexAttribArray(loc);
+	                }
+	            }
 	            var verDec = vertexBuffer.vertexDeclaration;
 	            var valueData = verDec._shaderValues.getData();
 	            this.vertexDeclaration = verDec;
@@ -10222,7 +10235,7 @@
 	        blend == null && (blend = renderState.blend);
 	        stencilRef == null && (stencilRef = renderState.stencilRef);
 	        stencilTest == null && (stencilTest = renderState.stencilTest);
-	        stencilWrite == null && (stencilTest = renderState.stencilWrite);
+	        stencilWrite == null && (stencilWrite = renderState.stencilWrite);
 	        stencilOp == null && (stencilOp = renderState.stencilOp);
 	        Laya.WebGLContext.setDepthMask(gl, depthWrite);
 	        if (depthTest === RenderState.DEPTHTEST_OFF)
@@ -10499,6 +10512,8 @@
 	    }
 	    remove(element) {
 	        var index = element._getIndexInList();
+	        if (index === -1)
+	            return;
 	        this.length--;
 	        if (index !== this.length) {
 	            var end = this.elements[this.length];
@@ -10605,11 +10620,14 @@
 	        var loopCount = Laya.Stat.loopCount;
 	        for (var i = 0, n = renderList.length; i < n; i++) {
 	            var render = renders[i];
-	            var canPass;
+	            var canPass = true;
+	            if (Config3D._config.distanceVolumCull) {
+	                canPass = FrustumCulling.cullDistanceVolume(context, render);
+	            }
 	            if (isShadowCasterCull)
-	                canPass = render._castShadow && render._enable;
+	                canPass = render._castShadow && render._enable && canPass;
 	            else
-	                canPass = ((Math.pow(2, render._owner._layer) & cullMask) != 0) && render._enable;
+	                canPass = ((Math.pow(2, render._owner._layer) & cullMask) != 0) && render._enable && canPass;
 	            if (canPass) {
 	                Laya.Stat.frustumCulling++;
 	                if (!cameraCullInfo.useOcclusionCulling || render._needRender(boundFrustum, context)) {
@@ -10621,6 +10639,20 @@
 	                }
 	            }
 	        }
+	    }
+	    static cullDistanceVolume(context, render) {
+	        let camera = context.camera;
+	        if (!camera || !camera.transform)
+	            return false;
+	        let bound = render.bounds;
+	        let center = bound.getCenter();
+	        let exten = bound.getExtent();
+	        let dis = Vector3.distance(camera.transform.position, center);
+	        let volum = Math.max(exten.x, exten.y, exten.z);
+	        if (volum / dis < render._ratioIgnor) {
+	            return false;
+	        }
+	        return true;
 	    }
 	    static renderObjectCulling(cameraCullInfo, scene, context, customShader, replacementTag, isShadowCasterCull) {
 	        var opaqueQueue = scene._opaqueQueue;
@@ -10661,7 +10693,8 @@
 	        var loopCount = Laya.Stat.loopCount;
 	        for (var i = 0, n = renderList.length; i < n; i++) {
 	            var render = renders[i];
-	            var canPass = render._castShadow && render._enable;
+	            var opaqueRender = render.sharedMaterial && render.sharedMaterial.renderQueue < Material.RENDERQUEUE_TRANSPARENT;
+	            var canPass = render._castShadow && render._enable && opaqueRender;
 	            if (canPass) {
 	                Laya.Stat.frustumCulling++;
 	                let pass = FrustumCulling.cullingRenderBounds(render.bounds, cullInfo);
@@ -11556,7 +11589,6 @@
 	        return sh;
 	    }
 	    static CalGradientSH(skyColor, equatorColor, groundColor, isGamma = true) {
-	        console.time("Gradient SH");
 	        let skyPixels = this._tempSkyPixels;
 	        let equatorPixels = this._tempEquatorPixels;
 	        let groundPixels = this._tempGroundPixels;
@@ -11585,7 +11617,6 @@
 	        gradientPixles[exports.TextureCubeFace.PositiveZ] = equatorPixels;
 	        gradientPixles[exports.TextureCubeFace.NegativeZ] = equatorPixels;
 	        let sh = SphericalHarmonicsL2Generater.CalCubemapSH(gradientPixles, 3, this.GradientSimulateSize, false);
-	        console.timeEnd("Gradient SH");
 	        return sh;
 	    }
 	}
@@ -12619,24 +12650,44 @@
 	        var maxX = max.x;
 	        var maxY = max.y;
 	        var maxZ = max.z;
+	        if (box._lastBoundIndex != -1) {
+	            let plan = this.getPlane(box._lastBoundIndex);
+	            const normal = plan.normal;
+	            if (plan.distance + (normal.x * (normal.x < 0 ? minX : maxX)) + (normal.y * (normal.y < 0 ? minY : maxY)) + (normal.z * (normal.z < 0 ? minZ : maxZ)) < 0) {
+	                return false;
+	            }
+	        }
 	        var nearNormal = this._near.normal;
-	        if (this._near.distance + (nearNormal.x * (nearNormal.x < 0 ? minX : maxX)) + (nearNormal.y * (nearNormal.y < 0 ? minY : maxY)) + (nearNormal.z * (nearNormal.z < 0 ? minZ : maxZ)) < 0)
+	        if (this._near.distance + (nearNormal.x * (nearNormal.x < 0 ? minX : maxX)) + (nearNormal.y * (nearNormal.y < 0 ? minY : maxY)) + (nearNormal.z * (nearNormal.z < 0 ? minZ : maxZ)) < 0) {
+	            box._lastBoundIndex = 0;
 	            return false;
+	        }
 	        var leftNormal = this._left.normal;
-	        if (this._left.distance + (leftNormal.x * (leftNormal.x < 0 ? minX : maxX)) + (leftNormal.y * (leftNormal.y < 0 ? minY : maxY)) + (leftNormal.z * (leftNormal.z < 0 ? minZ : maxZ)) < 0)
+	        if (this._left.distance + (leftNormal.x * (leftNormal.x < 0 ? minX : maxX)) + (leftNormal.y * (leftNormal.y < 0 ? minY : maxY)) + (leftNormal.z * (leftNormal.z < 0 ? minZ : maxZ)) < 0) {
+	            box._lastBoundIndex = 2;
 	            return false;
+	        }
 	        var rightNormal = this._right.normal;
-	        if (this._right.distance + (rightNormal.x * (rightNormal.x < 0 ? minX : maxX)) + (rightNormal.y * (rightNormal.y < 0 ? minY : maxY)) + (rightNormal.z * (rightNormal.z < 0 ? minZ : maxZ)) < 0)
+	        if (this._right.distance + (rightNormal.x * (rightNormal.x < 0 ? minX : maxX)) + (rightNormal.y * (rightNormal.y < 0 ? minY : maxY)) + (rightNormal.z * (rightNormal.z < 0 ? minZ : maxZ)) < 0) {
+	            box._lastBoundIndex = 3;
 	            return false;
+	        }
 	        var bottomNormal = this._bottom.normal;
-	        if (this._bottom.distance + (bottomNormal.x * (bottomNormal.x < 0 ? minX : maxX)) + (bottomNormal.y * (bottomNormal.y < 0 ? minY : maxY)) + (bottomNormal.z * (bottomNormal.z < 0 ? minZ : maxZ)) < 0)
+	        if (this._bottom.distance + (bottomNormal.x * (bottomNormal.x < 0 ? minX : maxX)) + (bottomNormal.y * (bottomNormal.y < 0 ? minY : maxY)) + (bottomNormal.z * (bottomNormal.z < 0 ? minZ : maxZ)) < 0) {
+	            box._lastBoundIndex = 5;
 	            return false;
+	        }
 	        var topNormal = this._top.normal;
-	        if (this._top.distance + (topNormal.x * (topNormal.x < 0 ? minX : maxX)) + (topNormal.y * (topNormal.y < 0 ? minY : maxY)) + (topNormal.z * (topNormal.z < 0 ? minZ : maxZ)) < 0)
+	        if (this._top.distance + (topNormal.x * (topNormal.x < 0 ? minX : maxX)) + (topNormal.y * (topNormal.y < 0 ? minY : maxY)) + (topNormal.z * (topNormal.z < 0 ? minZ : maxZ)) < 0) {
+	            box._lastBoundIndex = 4;
 	            return false;
+	        }
 	        var farNormal = this._far.normal;
-	        if (this._far.distance + (farNormal.x * (farNormal.x < 0 ? minX : maxX)) + (farNormal.y * (farNormal.y < 0 ? minY : maxY)) + (farNormal.z * (farNormal.z < 0 ? minZ : maxZ)) < 0)
+	        if (this._far.distance + (farNormal.x * (farNormal.x < 0 ? minX : maxX)) + (farNormal.y * (farNormal.y < 0 ? minY : maxY)) + (farNormal.z * (farNormal.z < 0 ? minZ : maxZ)) < 0) {
+	            box._lastBoundIndex = 1;
 	            return false;
+	        }
+	        box._lastBoundIndex = -1;
 	        return true;
 	    }
 	    containsBoundBox(box) {
@@ -13305,6 +13356,7 @@
 	BaseCamera.DEPTHTEXTURE = Shader3D.propertyNameToID("u_CameraDepthTexture");
 	BaseCamera.DEPTHNORMALSTEXTURE = Shader3D.propertyNameToID("u_CameraDepthNormalsTexture");
 	BaseCamera.DEPTHZBUFFERPARAMS = Shader3D.propertyNameToID("u_ZBufferParams");
+	BaseCamera.OPAQUETEXTURE = Shader3D.propertyNameToID("u_cameraOpaqueTexture");
 	BaseCamera.SHADERDEFINE_DEPTH = Shader3D.getDefineByName("DEPTHMAP");
 	BaseCamera.SHADERDEFINE_DEPTHNORMALS = Shader3D.getDefineByName("DEPTHNORMALSMAP");
 	BaseCamera.RENDERINGTYPE_DEFERREDLIGHTING = "DEFERREDLIGHTING";
@@ -14299,6 +14351,18 @@
 	    set depthTextureMode(value) {
 	        this._depthTextureMode = value;
 	    }
+	    set opaquePass(value) {
+	        if (value == this._opaquePass)
+	            return;
+	        if (!value) {
+	            this._shaderValues.setTexture(BaseCamera.OPAQUETEXTURE, null);
+	            this._opaqueTexture = null;
+	        }
+	        this._opaquePass = value;
+	    }
+	    get opaquePass() {
+	        return this._opaquePass;
+	    }
 	    get depthTextureFormat() {
 	        return this._depthTextureFormat;
 	    }
@@ -14314,6 +14378,18 @@
 	    }
 	    get canblitDepth() {
 	        return this._canBlitDepth && this._internalRenderTexture && this._internalRenderTexture.depthStencilFormat != Laya.RenderTextureDepthFormat.DEPTHSTENCIL_NONE && this._internalRenderTexture.depthAttachMode == Laya.RTDEPTHATTACHMODE.TEXTURE;
+	    }
+	    get depthTexture() {
+	        return this._depthTexture;
+	    }
+	    set depthTexture(value) {
+	        this._depthTexture = value;
+	    }
+	    get depthNormalTexture() {
+	        return this._depthNormalsTexture;
+	    }
+	    set depthNormalTexture(value) {
+	        this._depthNormalsTexture = value;
 	    }
 	    _calculationViewport(normalizedViewport, width, height) {
 	        var lx = normalizedViewport.x * width;
@@ -14443,8 +14519,8 @@
 	            }
 	            var halfY = Math.tan((this.fieldOfView / 2) * Math.PI / 180);
 	            var halfX = this.aspectRatio * halfY;
-	            var yLengthPerCluster = 2 * halfY / xSlixe;
-	            var xLengthPerCluster = 2 * halfX / ySlice;
+	            var yLengthPerCluster = 2 * halfY / ySlice;
+	            var xLengthPerCluster = 2 * halfX / xSlixe;
 	            for (var i = 0; i < xCount; i++) {
 	                var angle = -halfX + xLengthPerCluster * i;
 	                var bigHypot = Math.sqrt(1 + angle * angle);
@@ -14571,6 +14647,8 @@
 	        this._applyCommandBuffer(exports.CameraEventFlags.BeforeForwardOpaque, context);
 	        Laya.PerformancePlugin.begainSample(Laya.PerformancePlugin.PERFORMANCE_LAYA_3D_RENDER_RENDEROPAQUE);
 	        scene._renderScene(context, ILaya3D.Scene3D.SCENERENDERFLAG_RENDERQPAQUE);
+	        this._opaquePass && this._createOpaqueTexture(renderTex, context);
+	        (renderTex) && (renderTex._start());
 	        Laya.PerformancePlugin.endSample(Laya.PerformancePlugin.PERFORMANCE_LAYA_3D_RENDER_RENDEROPAQUE);
 	        this._applyCommandBuffer(exports.CameraEventFlags.BeforeSkyBox, context);
 	        scene._renderScene(context, ILaya3D.Scene3D.SCENERENDERFLAG_SKYBOX);
@@ -14627,22 +14705,21 @@
 	        }
 	        Laya.PerformancePlugin.endSample(Laya.PerformancePlugin.PERFORMANCE_LAYA_3D_RENDER_RENDERDEPTHMDOE);
 	    }
-	    get depthTexture() {
-	        return this._depthTexture;
-	    }
-	    set depthTexture(value) {
-	        this._depthTexture = value;
-	    }
-	    get depthNormalTexture() {
-	        return this._depthNormalsTexture;
-	    }
-	    set depthNormalTexture(value) {
-	        this._depthNormalsTexture = value;
-	    }
 	    _aftRenderMainPass(needShadowPass) {
 	        if (needShadowPass)
 	            ILaya3D.Scene3D._shadowCasterPass.cleanUp();
 	        Camera.depthPass.cleanUp();
+	    }
+	    _createOpaqueTexture(currentTarget, renderContext) {
+	        if (!this._opaqueTexture) {
+	            let tex = this._getRenderTexture();
+	            this._opaqueTexture = RenderTexture.createFromPool(tex.width, tex.height, tex.format, Laya.RenderTextureDepthFormat.DEPTHSTENCIL_NONE);
+	            this._shaderValues.setTexture(BaseCamera.OPAQUETEXTURE, this._opaqueTexture);
+	        }
+	        var blit = BlitScreenQuadCMD.create(currentTarget, this._opaqueTexture);
+	        blit.setContext(renderContext);
+	        blit.run();
+	        blit.recover();
 	    }
 	    render(shader = null, replacementTag = null) {
 	        if (!this.activeInHierarchy)
@@ -15197,6 +15274,7 @@
 
 	class BoundBox {
 	    constructor(min, max) {
+	        this._lastBoundIndex = -1;
 	        this.min = min;
 	        this.max = max;
 	    }
@@ -16875,6 +16953,7 @@
 	        this._updateRenderType = -1;
 	        this._isPartOfStaticBatch = false;
 	        this._staticBatch = null;
+	        this._ratioIgnor = 0.005;
 	        this._id = ++BaseRender._uniqueIDCounter;
 	        this._indexInCastShadowList = -1;
 	        this._bounds = new Bounds(Vector3._ZERO, Vector3._ZERO);
@@ -16890,6 +16969,12 @@
 	    }
 	    get id() {
 	        return this._id;
+	    }
+	    set ratioIgnor(value) {
+	        this._ratioIgnor = value;
+	    }
+	    get ratioIgnor() {
+	        return this._ratioIgnor;
 	    }
 	    get lightmapIndex() {
 	        return this._lightmapIndex;
@@ -18696,7 +18781,6 @@
 	        this._reflectionCubeHDRParams = new Vector4();
 	        this._reflectionProbeManager = new ReflectionProbeManager();
 	        this.currentCreationLayer = Math.pow(2, 0);
-	        this.enableLight = true;
 	        this._key = new Laya.SubmitKey();
 	        this._pickIdToSprite = new Object();
 	        this._reflectionMode = 0;
@@ -25599,7 +25683,7 @@
 	        this._customBounds = value;
 	    }
 	    _simulationSupported() {
-	        if (this.simulationSpace == 0) {
+	        if (this.simulationSpace == 0 && this.emission.emissionRateOverDistance > 0) {
 	            return false;
 	        }
 	        return true;
@@ -26788,15 +26872,20 @@
 	    }
 	    destroy() {
 	        super.destroy();
+	        let memorySize = 0;
 	        if (this._indexBuffer) {
+	            memorySize += this._indexBuffer._byteLength;
 	            this._indexBuffer.destroy();
 	        }
 	        if (this._vertexBuffer) {
+	            memorySize += this._vertexBuffer._byteLength;
 	            this._vertexBuffer.destroy();
 	        }
 	        if (this._instanceParticleVertexBuffer) {
+	            memorySize += this._instanceParticleVertexBuffer._byteLength;
 	            this._instanceParticleVertexBuffer.destroy();
 	        }
+	        Laya.Resource._addMemory(-memorySize, -memorySize);
 	        this._instanceVertex = null;
 	        this._meshIndexCount = null;
 	        this._meshFloatCountPreVertex = null;
@@ -29546,35 +29635,33 @@
 	        instanceBufferState.unBind();
 	    }
 	    _getPhysicMesh() {
-	        if (!this._btTriangleMesh) {
-	            var bt = Physics3D._bullet;
-	            var triangleMesh = bt.btTriangleMesh_create();
-	            var nativePositio0 = Mesh._nativeTempVector30;
-	            var nativePositio1 = Mesh._nativeTempVector31;
-	            var nativePositio2 = Mesh._nativeTempVector32;
-	            var position0 = this._tempVector30;
-	            var position1 = this._tempVector31;
-	            var position2 = this._tempVector32;
-	            var vertexBuffer = this._vertexBuffer;
-	            var positionElement = this._getPositionElement(vertexBuffer);
-	            var verticesData = vertexBuffer.getFloat32Data();
-	            var floatCount = vertexBuffer.vertexDeclaration.vertexStride / 4;
-	            var posOffset = positionElement._offset / 4;
-	            var indices = this._indexBuffer.getData();
-	            for (var i = 0, n = indices.length; i < n; i += 3) {
-	                var p0Index = indices[i] * floatCount + posOffset;
-	                var p1Index = indices[i + 1] * floatCount + posOffset;
-	                var p2Index = indices[i + 2] * floatCount + posOffset;
-	                position0.setValue(verticesData[p0Index], verticesData[p0Index + 1], verticesData[p0Index + 2]);
-	                position1.setValue(verticesData[p1Index], verticesData[p1Index + 1], verticesData[p1Index + 2]);
-	                position2.setValue(verticesData[p2Index], verticesData[p2Index + 1], verticesData[p2Index + 2]);
-	                Utils3D._convertToBulletVec3(position0, nativePositio0, true);
-	                Utils3D._convertToBulletVec3(position1, nativePositio1, true);
-	                Utils3D._convertToBulletVec3(position2, nativePositio2, true);
-	                bt.btTriangleMesh_addTriangle(triangleMesh, nativePositio0, nativePositio1, nativePositio2, true);
-	            }
-	            this._btTriangleMesh = triangleMesh;
+	        var bt = Physics3D._bullet;
+	        var triangleMesh = bt.btTriangleMesh_create();
+	        var nativePositio0 = Mesh._nativeTempVector30;
+	        var nativePositio1 = Mesh._nativeTempVector31;
+	        var nativePositio2 = Mesh._nativeTempVector32;
+	        var position0 = this._tempVector30;
+	        var position1 = this._tempVector31;
+	        var position2 = this._tempVector32;
+	        var vertexBuffer = this._vertexBuffer;
+	        var positionElement = this._getPositionElement(vertexBuffer);
+	        var verticesData = vertexBuffer.getFloat32Data();
+	        var floatCount = vertexBuffer.vertexDeclaration.vertexStride / 4;
+	        var posOffset = positionElement._offset / 4;
+	        var indices = this._indexBuffer.getData();
+	        for (var i = 0, n = indices.length; i < n; i += 3) {
+	            var p0Index = indices[i] * floatCount + posOffset;
+	            var p1Index = indices[i + 1] * floatCount + posOffset;
+	            var p2Index = indices[i + 2] * floatCount + posOffset;
+	            position0.setValue(verticesData[p0Index], verticesData[p0Index + 1], verticesData[p0Index + 2]);
+	            position1.setValue(verticesData[p1Index], verticesData[p1Index + 1], verticesData[p1Index + 2]);
+	            position2.setValue(verticesData[p2Index], verticesData[p2Index + 1], verticesData[p2Index + 2]);
+	            Utils3D._convertToBulletVec3(position0, nativePositio0, true);
+	            Utils3D._convertToBulletVec3(position1, nativePositio1, true);
+	            Utils3D._convertToBulletVec3(position2, nativePositio2, true);
+	            bt.btTriangleMesh_addTriangle(triangleMesh, nativePositio0, nativePositio1, nativePositio2, true);
 	        }
+	        this._btTriangleMesh = triangleMesh;
 	        return this._btTriangleMesh;
 	    }
 	    _uploadVerticesData() {

@@ -2216,7 +2216,7 @@
 	            var pow = Math.pow(10, (this._tick + "").length - 1);
 	            this._value = Math.round(Math.round(this._value / this._tick) * this._tick * pow) / pow;
 	        }
-	        if (this._max >= this._max) {
+	        if (this._max >= this._min) {
 	            this._value = this._value > this._max ? this._max : this._value < this._min ? this._min : this._value;
 	        }
 	        else {
@@ -2313,6 +2313,9 @@
 	        this.autoHide = false;
 	        this.elasticDistance = 0;
 	        this.elasticBackTime = 500;
+	        this.topMoveLimit = 0;
+	        this.bottomMoveLimit = 0;
+	        this.disableDrag = false;
 	        this._showButtons = UIConfig.showButtons;
 	        this._scrollSize = 1;
 	        this._thumbPercent = 1;
@@ -2627,6 +2630,8 @@
 	        Laya.ILaya.timer.frameLoop(1, this, this.tweenMove, [200]);
 	    }
 	    loop() {
+	        if (this.disableDrag)
+	            return;
 	        var mouseY = Laya.ILaya.stage.mouseY;
 	        var mouseX = Laya.ILaya.stage.mouseX;
 	        this._lastOffset = this.isVertical ? (mouseY - this._lastPoint.y) : (mouseX - this._lastPoint.x);
@@ -2709,10 +2714,14 @@
 	        this._target.mouseEnabled = true;
 	        if (this._isElastic) {
 	            if (this._value < this.min) {
-	                Laya.Tween.to(this, { value: this.min }, this.elasticBackTime, Laya.Ease.sineOut, Laya.Handler.create(this, this.elasticOver));
+	                this.event("dragTopLimit");
+	                var moveValue = (this.stopMoveLimit && this.stopMoveLimit()) ? (this.min - this.topMoveLimit) : this.min;
+	                Laya.Tween.to(this, { value: moveValue }, this.elasticBackTime, Laya.Ease.sineOut, Laya.Handler.create(this, this.elasticOver));
 	            }
 	            else if (this._value > this.max) {
-	                Laya.Tween.to(this, { value: this.max }, this.elasticBackTime, Laya.Ease.sineOut, Laya.Handler.create(this, this.elasticOver));
+	                this.event("dragBottomLimit");
+	                var moveValue = (this.stopMoveLimit && this.stopMoveLimit()) ? (this.max + this.bottomMoveLimit) : this.max;
+	                Laya.Tween.to(this, { value: moveValue }, this.elasticBackTime, Laya.Ease.sineOut, Laya.Handler.create(this, this.elasticOver));
 	            }
 	        }
 	        else {
@@ -2797,6 +2806,14 @@
 	    set tick(value) {
 	        this.slider.tick = value;
 	    }
+	    backToNormal() {
+	        if (this._value < this.min) {
+	            Laya.Tween.to(this, { value: this.min }, this.elasticBackTime, Laya.Ease.sineOut, Laya.Handler.create(this, this.elasticOver));
+	        }
+	        else if (this._value > this.max) {
+	            Laya.Tween.to(this, { value: this.max }, this.elasticBackTime, Laya.Ease.sineOut, Laya.Handler.create(this, this.elasticOver));
+	        }
+	    }
 	}
 	Laya.ILaya.regClass(ScrollBar);
 	Laya.ClassUtils.regClass("laya.ui.ScrollBar", ScrollBar);
@@ -2823,6 +2840,7 @@
 	        super(...arguments);
 	        this.selectEnable = false;
 	        this.totalPage = 0;
+	        this.disableStopScroll = false;
 	        this._$componentType = "List";
 	        this._repeatX = 0;
 	        this._repeatY = 0;
@@ -3310,7 +3328,7 @@
 	        this._selectedIndex = this._selectedIndex < length ? this._selectedIndex : length - 1;
 	        this.startIndex = this._startIndex;
 	        if (this._scrollBar) {
-	            this._scrollBar.stopScroll();
+	            (!this.disableStopScroll && this._scrollBar.stopScroll());
 	            var numX = this._isVertical ? this.repeatX : this.repeatY;
 	            var numY = this._isVertical ? this.repeatY : this.repeatX;
 	            var lineCount = Math.ceil(length / numX);
@@ -3473,8 +3491,10 @@
 	        super();
 	        this._visibleNum = 6;
 	        this._itemColors = Styles.comboBoxItemColors;
+	        this._itemPadding = [3, 3, 3, 3];
 	        this._itemSize = 12;
 	        this._labels = [];
+	        this._defaultLabel = '';
 	        this._selectedIndex = -1;
 	        this.itemRender = null;
 	        this.skin = skin;
@@ -3489,8 +3509,10 @@
 	        this._button = null;
 	        this._list = null;
 	        this._itemColors = null;
+	        this._itemPadding = null;
 	        this._labels = null;
 	        this._selectHandler = null;
+	        this._defaultLabel = null;
 	    }
 	    createChildren() {
 	        this.addChild(this._button = new Button());
@@ -3539,8 +3561,9 @@
 	        this._listChanged = false;
 	        var labelWidth = this.width - 2;
 	        var labelColor = this._itemColors[2];
-	        this._itemHeight = this._itemSize + 6;
-	        this._list.itemRender = this.itemRender || { type: "Box", child: [{ type: "Label", props: { name: "label", x: 1, padding: "3,3,3,3", width: labelWidth, height: this._itemHeight, fontSize: this._itemSize, color: labelColor } }] };
+	        this._itemHeight = (this._itemHeight) ? this._itemHeight : this._itemSize + 6;
+	        let _padding = (this.itemPadding) ? this.itemPadding : "3,3,3,3";
+	        this._list.itemRender = this.itemRender || { type: "Box", child: [{ type: "Label", props: { name: "label", x: 1, padding: _padding, width: labelWidth, height: this._itemHeight, fontSize: this._itemSize, color: labelColor } }] };
 	        this._list.repeatY = this._visibleNum;
 	        this._list.refresh();
 	    }
@@ -3636,6 +3659,13 @@
 	    changeSelected() {
 	        this._button.label = this.selectedLabel;
 	    }
+	    get defaultLabel() {
+	        return this._defaultLabel;
+	    }
+	    set defaultLabel(value) {
+	        this._defaultLabel = value;
+	        this._selectedIndex < 0 && (this._button.label = value);
+	    }
 	    get selectHandler() {
 	        return this._selectHandler;
 	    }
@@ -3643,7 +3673,7 @@
 	        this._selectHandler = value;
 	    }
 	    get selectedLabel() {
-	        return this._selectedIndex > -1 && this._selectedIndex < this._labels.length ? this._labels[this._selectedIndex] : null;
+	        return this._selectedIndex > -1 && this._selectedIndex < this._labels.length ? this._labels[this._selectedIndex] : this.defaultLabel;
 	    }
 	    set selectedLabel(value) {
 	        this.selectedIndex = this._labels.indexOf(value);
@@ -3662,11 +3692,24 @@
 	        this._itemColors = UIUtils.fillArray(this._itemColors, value, String);
 	        this._listChanged = true;
 	    }
+	    get itemPadding() {
+	        return this._itemPadding.join(",");
+	    }
+	    set itemPadding(value) {
+	        this._itemPadding = UIUtils.fillArray(this._itemPadding, value, Number);
+	    }
 	    get itemSize() {
 	        return this._itemSize;
 	    }
 	    set itemSize(value) {
 	        this._itemSize = value;
+	        this._listChanged = true;
+	    }
+	    get itemHeight() {
+	        return this._itemHeight;
+	    }
+	    set itemHeight(value) {
+	        this._itemHeight = value;
 	        this._listChanged = true;
 	    }
 	    get isOpen() {
@@ -3682,7 +3725,7 @@
 	                this._itemChanged && this.changeItem();
 	                var p = this.localToGlobal(Laya.Point.TEMP.setTo(0, 0));
 	                var py = p.y + this._button.height;
-	                py = py + this._listHeight <= Laya.ILaya.stage.height ? py : p.y - this._listHeight;
+	                py = py + this._listHeight <= Laya.ILaya.stage.height ? py : p.y - this._listHeight < 0 ? py : p.y - this._listHeight;
 	                this._list.pos(p.x, py);
 	                this._list.zOrder = 1001;
 	                Laya.ILaya.stage.addChild(this._list);
@@ -4377,6 +4420,10 @@
 	        this._tf.on(Laya.Event.ENTER, this, this._onEnter);
 	        this._tf.on(Laya.Event.BLUR, this, this._onBlur);
 	        this._tf.on(Laya.Event.FOCUS, this, this._onFocus);
+	        this._tf.on(Laya.Event.CHANGE, this, this._onChange);
+	    }
+	    _onChange() {
+	        this.event(Laya.Event.CHANGE, this);
 	    }
 	    _onFocus() {
 	        this.event(Laya.Event.FOCUS, this);
@@ -4601,29 +4648,27 @@
 	        return this._tf.scrollX;
 	    }
 	    changeScroll() {
-	        var vShow = this._vScrollBar && this._tf.maxScrollY > 0;
-	        var hShow = this._hScrollBar && this._tf.maxScrollX > 0;
-	        var showWidth = vShow ? this._width - this._vScrollBar.width : this._width;
-	        var showHeight = hShow ? this._height - this._hScrollBar.height : this._height;
-	        var padding = this._tf.padding || Styles.labelPadding;
-	        this._tf.width = showWidth;
-	        this._tf.height = showHeight;
+	        let vShow = this._vScrollBar && this._tf.maxScrollY > 0, hShow = this._hScrollBar && this._tf.maxScrollX > 0, vScrollBarWidth = 0, hScrollBarHeight = 0, padding = this._tf.padding || Styles.labelPadding;
+	        vShow && (vScrollBarWidth = this._vScrollBar.width);
+	        hShow && (hScrollBarHeight = this._hScrollBar.height);
+	        this._tf.width = this._width - vScrollBarWidth;
+	        this._tf.height = this._height - hScrollBarHeight;
 	        if (this._vScrollBar) {
-	            this._vScrollBar.x = this._width - this._vScrollBar.width - padding[2];
-	            this._vScrollBar.y = padding[1];
-	            this._vScrollBar.height = this._height - (hShow ? this._hScrollBar.height : 0) - padding[1] - padding[3];
+	            this._vScrollBar.x = this._width - this._vScrollBar.width - padding[1];
+	            this._vScrollBar.y = padding[0];
+	            this._vScrollBar.height = this._height - hScrollBarHeight - padding[0] - padding[2];
 	            this._vScrollBar.scrollSize = 1;
-	            this._vScrollBar.thumbPercent = showHeight / Math.max(this._tf.textHeight, showHeight);
-	            this._vScrollBar.setScroll(1, this._tf.maxScrollY, this._tf.scrollY);
+	            this._vScrollBar.thumbPercent = this._tf.height / Math.max(this._tf.textHeight, this._tf.height);
+	            this._vScrollBar.setScroll(0, this._tf.maxScrollY + 5, this._tf.scrollY);
 	            this._vScrollBar.visible = vShow;
 	        }
 	        if (this._hScrollBar) {
-	            this._hScrollBar.x = padding[0];
-	            this._hScrollBar.y = this._height - this._hScrollBar.height - padding[3];
-	            this._hScrollBar.width = this._width - (vShow ? this._vScrollBar.width : 0) - padding[0] - padding[2];
-	            this._hScrollBar.scrollSize = Math.max(showWidth * 0.033, 1);
-	            this._hScrollBar.thumbPercent = showWidth / Math.max(this._tf.textWidth, showWidth);
-	            this._hScrollBar.setScroll(0, this.maxScrollX, this.scrollX);
+	            this._hScrollBar.x = padding[3];
+	            this._hScrollBar.y = this._height - this._hScrollBar.height - padding[2];
+	            this._hScrollBar.width = this._width - vScrollBarWidth - padding[1] - padding[3];
+	            this._hScrollBar.scrollSize = Math.max(this._tf.width * 0.033, 1);
+	            this._hScrollBar.thumbPercent = this._tf.width / Math.max(this._tf.textWidth, this._tf.width);
+	            this._hScrollBar.setScroll(0, this._tf.maxScrollX + padding[1] + padding[3] + 8, this._tf.scrollX);
 	            this._hScrollBar.visible = hShow;
 	        }
 	    }
@@ -5291,15 +5336,15 @@
 	            var item = this.getChildAt(i);
 	            if (item) {
 	                items.push(item);
-	                maxHeight = this._height ? this._height : Math.max(maxHeight, item.height * item.scaleY);
+	                maxHeight = Math.max(maxHeight, item.height * item.scaleY);
 	            }
 	        }
 	        this.sortItem(items);
 	        var left = 0;
 	        for (i = 0, n = items.length; i < n; i++) {
 	            item = items[i];
-	            item.x = left;
-	            left += item.width * item.scaleX + this._space;
+	            i && (left += (items[i - 1].width * items[i - 1].scaleX) + this._space);
+	            item.left = left;
 	            if (this._align == HBox.TOP) {
 	                item.y = 0;
 	            }
@@ -5309,6 +5354,7 @@
 	            else if (this._align == HBox.BOTTOM) {
 	                item.y = maxHeight - item.height * item.scaleY;
 	            }
+	            item.pivotY && (item.y += item.pivotY * item.scaleY);
 	        }
 	        this._sizeChanged();
 	    }
@@ -5343,7 +5389,7 @@
 	            var item = this.getChildAt(i);
 	            if (item) {
 	                items.push(item);
-	                maxWidth = this._width ? this._width : Math.max(maxWidth, item.width * item.scaleX);
+	                maxWidth = Math.max(maxWidth, item.width * item.scaleX);
 	            }
 	        }
 	        if (this.isSortItem) {
@@ -5352,8 +5398,8 @@
 	        var top = 0;
 	        for (i = 0, n = items.length; i < n; i++) {
 	            item = items[i];
-	            item.y = top;
-	            top += item.height * item.scaleY + this._space;
+	            i && (top += (items[i - 1].height * items[i - 1].scaleX) + this._space);
+	            item.top = top;
 	            if (this._align == VBox.LEFT) {
 	                item.x = 0;
 	            }
@@ -5363,6 +5409,7 @@
 	            else if (this._align == VBox.RIGHT) {
 	                item.x = maxWidth - item.width * item.scaleX;
 	            }
+	            item.pivotX && (item.x += item.pivotX * item.scaleX);
 	        }
 	        this._sizeChanged();
 	    }
