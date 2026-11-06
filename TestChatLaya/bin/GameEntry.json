@@ -1,0 +1,22 @@
+{
+    "type": "Scene",
+    "props": { "width": 1334, "height": 750 },
+    "compId": 2,
+    "child": [
+        { "type": "Script", "props": { "top": 0, "right": 0, "left": 0, "bottom": 0, "runtime": "laya.ui.Widget" }, "compId": 3 },
+        { "type": "Image", "props": { "skin": "bg/background.jpg", "top": 0, "right": 0, "left": 0, "bottom": 0 }, "compId": 4 },
+        { "type": "Image", "props": { "skin": "bg/img_bg4.png", "width": 1100, "height": 560, "centerX": 0, "centerY": 0, "sizeGrid": "40,40,40,40" }, "compId": 5 },
+        { "type": "Label", "props": { "width": 900, "height": 90, "centerX": 0, "centerY": -225, "text": "别让箱子掉下来", "font": "SimHei", "fontSize": 68, "color": "#fff2b2", "bold": true, "stroke": 4, "strokeColor": "#1d3f7a", "align": "center", "valign": "middle" }, "compId": 6 },
+        { "type": "Image", "props": { "skin": "bg/img_kuang.png", "width": 820, "height": 130, "centerX": 0, "centerY": -100, "sizeGrid": "30,30,30,30" }, "compId": 7 },
+        { "type": "Label", "props": { "width": 790, "height": 120, "centerX": 0, "centerY": -100, "text": "点击屏幕发射子弹，击碎不断下落的箱子\n任何一个箱子落地，游戏立即结束", "font": "SimHei", "fontSize": 28, "leading": 12, "color": "#ffffff", "stroke": 2, "strokeColor": "#2f6ea8", "align": "center", "valign": "middle" }, "compId": 8 },
+        { "type": "Image", "props": { "skin": "test/b1.png", "width": 110, "height": 110, "centerX": -420, "centerY": 40, "rotation": -14, "mouseEnabled": false }, "compId": 9 },
+        { "type": "Image", "props": { "skin": "test/b1.png", "width": 76, "height": 76, "centerX": -330, "centerY": 130, "rotation": 20, "mouseEnabled": false }, "compId": 10 },
+        { "type": "Image", "props": { "skin": "test/b1.png", "width": 110, "height": 110, "centerX": 420, "centerY": 40, "rotation": 14, "mouseEnabled": false }, "compId": 11 },
+        { "type": "Image", "props": { "skin": "test/b1.png", "width": 76, "height": 76, "centerX": 330, "centerY": 130, "rotation": -20, "mouseEnabled": false }, "compId": 12 },
+        { "type": "Button", "props": { "skin": "comp/button.png", "sizeGrid": "12,12,12,12", "width": 340, "height": 100, "centerX": 0, "centerY": 130, "name": "startBtn", "label": "开始游戏", "labelSize": 46, "labelFont": "SimHei", "labelBold": true, "labelColors": "#ffffff,#333333,#ffffff", "labelPadding": "0,0,2,0" }, "compId": 13 },
+        { "type": "Label", "props": { "width": 800, "height": 40, "centerX": 0, "centerY": 235, "text": "准备好了吗？点击下方按钮开始挑战", "font": "SimHei", "fontSize": 26, "color": "#ffffff", "stroke": 2, "strokeColor": "#2f6ea8", "align": "center", "valign": "middle" }, "compId": 14 },
+        { "type": "Script", "props": { "startBtn": "@node:13", "runtime": "GameEntry.ts" }, "compId": 15 }
+    ],
+    "loadList": ["bg/background.jpg", "bg/img_bg4.png", "bg/img_kuang.png", "comp/button.png", "test/b1.png"],
+    "loadList3D": []
+}

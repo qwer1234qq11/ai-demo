@@ -2,6 +2,7 @@
 import CloseBtn from "./prefab/CloseBtn"
 import D3Main from "./scence/d3Demo/D3Main"
 import Index from "./Index"
+import GameEntry from "./GameEntry"
 import LoadingRT from "./LoadingRT"
 import PhysicsGameMainRT from "./scence/physicsDemo/PhysicsGameMainRT"
 import PhysicsGameMain from "./scence/physicsDemo/PhysicsGameMain"
@@ -60,6 +61,7 @@ export default class GameConfig{
         reg("prefab/CloseBtn.ts",CloseBtn);
         reg("scence/d3Demo/D3Main.ts",D3Main);
         reg("Index.ts",Index);
+        reg("GameEntry.ts",GameEntry);
         reg("LoadingRT.ts",LoadingRT);
         reg("scence/physicsDemo/PhysicsGameMainRT.ts",PhysicsGameMainRT);
         reg("scence/physicsDemo/PhysicsGameMain.ts",PhysicsGameMain);

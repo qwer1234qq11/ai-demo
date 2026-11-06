@@ -122,6 +122,19 @@
         }
     }
 
+    class GameEntry extends Laya.Script {
+        constructor() { super(); }
+        onEnable() {
+            this.startBtn.on(Laya.Event.CLICK, this, this.onStartClick);
+        }
+        onStartClick() {
+            Laya.Scene.open("physicsDemo/PhysicsGameMain.scene");
+        }
+        onDisable() {
+            this.startBtn.off(Laya.Event.CLICK, this, this.onStartClick);
+        }
+    }
+
     class Index extends Laya.Script {
         constructor() { super(); }
         onEnable() {
@@ -525,7 +538,7 @@
             this.progress.value = 0.98;
             console.log("加载结束", this.progress.value);
             Laya.timer.once(1000, this, () => {
-                Laya.Scene.open("Index.scene");
+                Laya.Scene.open("GameEntry.scene");
             });
         }
     }
@@ -2349,6 +2362,7 @@
             reg("prefab/CloseBtn.ts", CloseBtn);
             reg("scence/d3Demo/D3Main.ts", D3Main);
             reg("Index.ts", Index);
+            reg("GameEntry.ts", GameEntry);
             reg("LoadingRT.ts", LoadingRT);
             reg("scence/physicsDemo/PhysicsGameMainRT.ts", PhysicsGameMainRT);
             reg("scence/physicsDemo/PhysicsGameMain.ts", PhysicsGameMain);

@@ -68,8 +68,8 @@ export default class LoadingRT extends ui.LoadingUI {
         console.log("加载结束", this.progress.value);
         //预加载的东西太少，为了本地看效果延迟一秒，真实项目不需要延迟
         Laya.timer.once(1000, this, () => {
-            //跳转到入口场景
-            Laya.Scene.open("Index.scene");
+            //跳转到游戏入口场景
+            Laya.Scene.open("GameEntry.scene");
         });
     }
 }
